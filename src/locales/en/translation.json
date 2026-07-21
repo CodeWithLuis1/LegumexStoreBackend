@@ -1,0 +1,36 @@
+{
+    "errors": {
+        "not_found": "{{resource}} with id {{id}} was not found",
+        "unique_constraint": "The resource already exists",
+        "validation": "Validation error",
+        "internal": "Internal server error",
+        "zod": {
+            "invalid_type": "Invalid data type",
+            "too_small": "The value is too small",
+            "too_big": "The value is too big",
+            "invalid_string": "The format is invalid",
+            "custom": "Invalid value"
+        }
+    },
+    "success": {
+        "created": "{{resource}} created successfully",
+        "updated": "{{resource}} updated successfully",
+        "deleted": "{{resource}} deleted successfully"
+    },
+    "resources": {
+        "Category": "Category",
+        "SubCategory": "Sub-category",
+        "Product": "Product",
+        "ProductType": "Product type",
+        "Unit": "Unit",
+        "Attribute": "Attribute",
+        "Addin": "Add-in",
+        "Packaging": "Packaging",
+        "Presentation": "Presentation",
+        "Ingredient": "Ingredient",
+        "ProductVariant": "Product variant",
+        "ProductIngredient": "Product ingredient",
+        "ProductAddin": "Product add-in",
+        "ProductAttribute": "Product attribute"
+    }
+}
