@@ -3,11 +3,11 @@ import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreateProductAttributeInput, UpdateProductAttributeInput } from "../schemas/productAttribute.schema"
 
 async function listProductAttributes(): Promise<ProductAttribute[]> {
-    return ProductAttribute.findAll({ order: [["id", "ASC"]] })
+    return ProductAttribute.findAll({ where: { isActive: true }, order: [["id", "ASC"]] })
 }
 
 async function getProductAttributeById(id: number): Promise<ProductAttribute> {
-    const productAttribute = await ProductAttribute.findByPk(id)
+    const productAttribute = await ProductAttribute.findOne({ where: { id, isActive: true } })
     if (!productAttribute) throw new NotFoundError("ProductAttribute", id)
     return productAttribute
 }

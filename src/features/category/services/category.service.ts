@@ -3,11 +3,11 @@ import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreateCategoryInput, UpdateCategoryInput } from "../schemas/category.schema"
 
 async function listCategories(): Promise<Category[]> {
-    return Category.findAll({ order: [["displayOrder", "ASC"]] })
+    return Category.findAll({ where: { isActive: true }, order: [["displayOrder", "ASC"]] })
 }
 
 async function getCategoryById(id: number): Promise<Category> {
-    const category = await Category.findByPk(id)
+    const category = await Category.findOne({ where: { id, isActive: true } })
     if (!category) throw new NotFoundError("Category", id)
     return category
 }

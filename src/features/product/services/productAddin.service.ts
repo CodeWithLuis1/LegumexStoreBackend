@@ -3,11 +3,11 @@ import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreateProductAddinInput, UpdateProductAddinInput } from "../schemas/productAddin.schema"
 
 async function listProductAddins(): Promise<ProductAddin[]> {
-    return ProductAddin.findAll({ order: [["id", "ASC"]] })
+    return ProductAddin.findAll({ where: { isActive: true }, order: [["id", "ASC"]] })
 }
 
 async function getProductAddinById(id: number): Promise<ProductAddin> {
-    const productAddin = await ProductAddin.findByPk(id)
+    const productAddin = await ProductAddin.findOne({ where: { id, isActive: true } })
     if (!productAddin) throw new NotFoundError("ProductAddin", id)
     return productAddin
 }

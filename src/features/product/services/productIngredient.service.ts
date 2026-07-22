@@ -3,11 +3,11 @@ import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreateProductIngredientInput, UpdateProductIngredientInput } from "../schemas/productIngredient.schema"
 
 async function listProductIngredients(): Promise<ProductIngredient[]> {
-    return ProductIngredient.findAll({ order: [["displayOrder", "ASC"]] })
+    return ProductIngredient.findAll({ where: { isActive: true }, order: [["displayOrder", "ASC"]] })
 }
 
 async function getProductIngredientById(id: number): Promise<ProductIngredient> {
-    const productIngredient = await ProductIngredient.findByPk(id)
+    const productIngredient = await ProductIngredient.findOne({ where: { id, isActive: true } })
     if (!productIngredient) throw new NotFoundError("ProductIngredient", id)
     return productIngredient
 }

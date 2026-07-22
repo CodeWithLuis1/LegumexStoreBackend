@@ -4,11 +4,11 @@ import {CreateProductTypeInput, UpdateProductTypeInput} from "../schemas/product
 
 
 export async function listProductTypes(): Promise<ProductType[]> {
-    return ProductType.findAll({order: [["displayName", "DESC"]]})
+    return ProductType.findAll({where: { isActive: true }, order: [["displayName", "DESC"]]})
 }
 
 export async function getProductTypeById(id: number): Promise<ProductType> {
-    const productType = await ProductType.findByPk(id)
+    const productType = await ProductType.findOne({ where: { id, isActive: true } })
     if (!productType) throw new NotFoundError("ProductType", id)
     return productType
 }

@@ -3,11 +3,11 @@ import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreateAttributeInput, UpdateAttributeInput } from "../schemas/attributes.schema"
 
 async function listAttributes(): Promise<Attribute[]> {
-    return Attribute.findAll({ order: [["displayName", "ASC"]] })
+    return Attribute.findAll({ where: { isActive: true }, order: [["attributeName", "ASC"]] })
 }
 
 async function getAttributeById(id: number): Promise<Attribute> {
-    const attribute = await Attribute.findByPk(id)
+    const attribute = await Attribute.findOne({ where: { id, isActive: true } })
     if (!attribute) throw new NotFoundError("Attribute", id)
     return attribute
 }

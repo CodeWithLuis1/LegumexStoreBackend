@@ -3,11 +3,11 @@ import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreateSubCategoryInput, UpdateSubCategoryInput } from "../schemas/subCategory.schema"
 
 async function listSubCategories(): Promise<SubCategory[]> {
-    return SubCategory.findAll({ order: [["displayOrder", "ASC"]] })
+    return SubCategory.findAll({ where: { isActive: true }, order: [["displayOrder", "ASC"]] })
 }
 
 async function getSubCategoryById(id: number): Promise<SubCategory> {
-    const subCategory = await SubCategory.findByPk(id)
+    const subCategory = await SubCategory.findOne({ where: { id, isActive: true } })
     if (!subCategory) throw new NotFoundError("SubCategory", id)
     return subCategory
 }

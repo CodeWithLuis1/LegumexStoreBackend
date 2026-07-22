@@ -3,11 +3,11 @@ import {NotFoundError} from "../../../shared/errors/AppError"
 import {CreateProductInput, UpdateProductInput} from "../schemas/product.schema"
 
 async function listProducts(): Promise<Product[]> {
-    return Product.findAll({order: [["displayName", "DESC"]]})
+    return Product.findAll({where: { isActive: true }, order: [["displayName", "DESC"]]})
 }
 
 async function getProductById(id: number): Promise<Product> {
-    const product = await Product.findByPk(id)
+    const product = await Product.findOne({ where: { id, isActive: true } })
     if (!product) throw new NotFoundError("Product", id)
     return product
 }

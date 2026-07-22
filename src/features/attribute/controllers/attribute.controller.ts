@@ -1,5 +1,5 @@
-import { attributeService } from "../services/attributes.service"
 import { Request, Response, NextFunction } from "express"
+import { attributeService } from "../services/attributes.service"
 
 async function index(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {

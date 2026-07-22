@@ -3,11 +3,11 @@ import { NotFoundError } from "../../../shared/errors/AppError";
 import { CreateUnitInput, UpdateUnitInput } from "../schemas/unit.schema";
 
 async function listUnits(): Promise<Unit[]> {
-    return Unit.findAll({ order: [["displayName", "ASC"]] });
+    return Unit.findAll({ where: { isActive: true }, order: [["displayName", "ASC"]] });
 }
 
 async function getUnitById(id: number): Promise<Unit> {
-    const unit = await Unit.findByPk(id);
+    const unit = await Unit.findOne({ where: { id, isActive: true } });
     if (!unit) throw new NotFoundError("Unit", id);
     return unit;
 }

@@ -3,11 +3,11 @@ import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreatePackagingInput, UpdatePackagingInput } from "../schemas/packaging.schema"
 
 async function listPackagings(): Promise<Packaging[]> {
-    return Packaging.findAll({ order: [["displayName", "ASC"]] })
+    return Packaging.findAll({ where: { isActive: true }, order: [["displayName", "ASC"]] })
 }
 
 async function getPackagingById(id: number): Promise<Packaging> {
-    const packaging = await Packaging.findByPk(id)
+    const packaging = await Packaging.findOne({ where: { id, isActive: true } })
     if (!packaging) throw new NotFoundError("Packaging", id)
     return packaging
 }

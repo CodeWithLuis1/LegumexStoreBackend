@@ -3,11 +3,11 @@ import {NotFoundError} from "../../../shared/errors/AppError"
 import Addin from "../models/Addin.model"
 
 async function listAddins(): Promise<Addin[]> {
-    return Addin.findAll({order: [["displayName", "ASC"]]})
+    return Addin.findAll({where: { isActive: true }, order: [["displayName", "ASC"]]})
 }
 
 async function getAddinById(id: number): Promise<Addin> {
-    const addin = await Addin.findByPk(id)
+    const addin = await Addin.findOne({ where: { id, isActive: true } })
     if (!addin) throw new NotFoundError("Addin", id)
     return addin
 }
