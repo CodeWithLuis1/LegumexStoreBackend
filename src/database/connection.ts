@@ -47,7 +47,10 @@ export const sequelize = new Sequelize(env.databaseUrl, {
 export async function connectDB(): Promise<void> {
     try {
         await sequelize.authenticate()
-        await sequelize.sync({ alter: env.nodeEnv === "development" })
+        // alter only runs when explicitly requested (DB_SYNC_ALTER=true) AND never in production,
+        // so a missing/misconfigured NODE_ENV can't trigger schema-altering diffs against prod data.
+        const shouldAlter = env.dbSyncAlter && env.nodeEnv !== "production"
+        await sequelize.sync({ alter: shouldAlter })
         await runSeeders()
         console.log(colors.green.bold("Database connection established successfully"))
     } catch (error) {

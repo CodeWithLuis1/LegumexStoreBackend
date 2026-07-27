@@ -15,4 +15,5 @@ export const env = {
     nodeEnv: process.env.NODE_ENV ?? "development",
     serverPort: Number(process.env.SERVER_PORT) || 3000,
     databaseUrl: getRequiredEnv("DATABASE_URL"),
+    dbSyncAlter: process.env.DB_SYNC_ALTER === "true",
 } as const
