@@ -17,6 +17,11 @@ import Packaging from "../features/packaging/models/Packaging.model"
 import Ingredient from "../features/ingredient/models/Ingredient.model"
 import Attribute from "../features/attribute/models/Attribute.model"
 import Addin from "../features/addin/models/Addin.model"
+import User from "../features/accessControl/user/models/user.model"
+import Role from "../features/accessControl/roles/models/role.model"
+import Permission from "../features/accessControl/permissions/models/permission.model"
+import RolePermission from "../features/accessControl/rolePermissions/models/rolePermission.model"
+import Customer from "../features/customer/models/Customer.model"
 
 export const sequelize = new Sequelize(env.databaseUrl, {
     logging: env.nodeEnv === "development" ? console.log : false,
@@ -40,7 +45,12 @@ export const sequelize = new Sequelize(env.databaseUrl, {
         Packaging,
         Ingredient,
         Attribute,
-        Addin
+        Addin,
+        User,
+        Role,
+        Permission,
+        RolePermission,
+        Customer
     ]
 })
 

@@ -10,7 +10,11 @@
             "too_big": "El valor es demasiado largo",
             "invalid_string": "El formato no es válido",
             "custom": "Valor inválido"
-        }
+        },
+        "invalid_credentials": "Usuario o contraseña inválidos",
+        "account_locked": "Cuenta bloqueada por demasiados intentos fallidos. Intenta más tarde",
+        "unauthenticated": "Se requiere autenticación",
+        "forbidden": "No tienes permiso para realizar esta acción"
     },
     "success": {
         "created": "Creación de {{resource}} exitosa",
@@ -31,6 +35,31 @@
         "ProductVariant": "Variante de producto",
         "ProductIngredient": "Ingrediente del producto",
         "ProductAddin": "Adicional del producto",
-        "ProductAttribute": "Atributo del producto"
+        "ProductAttribute": "Atributo del producto",
+        "User": "Usuario",
+        "Role": "Rol",
+        "Permission": "Permiso",
+        "Customer": "Cliente"
+    },
+    "permissionActions": {
+        "view": "Ver",
+        "create": "Crear",
+        "edit": "Editar",
+        "delete": "Eliminar"
+    },
+    "resourcePlurals": {
+        "categories": "categorías",
+        "subCategories": "subcategorías",
+        "products": "productos",
+        "productTypes": "tipos de producto",
+        "units": "unidades",
+        "presentations": "presentaciones",
+        "packagings": "empaques",
+        "ingredients": "ingredientes",
+        "attributes": "atributos",
+        "addins": "adicionales",
+        "users": "usuarios",
+        "roles": "roles",
+        "permissions": "permisos"
     }
 }

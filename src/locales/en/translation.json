@@ -10,7 +10,11 @@
             "too_big": "The value is too big",
             "invalid_string": "The format is invalid",
             "custom": "Invalid value"
-        }
+        },
+        "invalid_credentials": "Invalid username or password",
+        "account_locked": "Account locked due to too many failed attempts. Try again later",
+        "unauthenticated": "Authentication required",
+        "forbidden": "You don't have permission to perform this action"
     },
     "success": {
         "created": "{{resource}} created successfully",
@@ -31,6 +35,31 @@
         "ProductVariant": "Product variant",
         "ProductIngredient": "Product ingredient",
         "ProductAddin": "Product add-in",
-        "ProductAttribute": "Product attribute"
+        "ProductAttribute": "Product attribute",
+        "User": "User",
+        "Role": "Role",
+        "Permission": "Permission",
+        "Customer": "Customer"
+    },
+    "permissionActions": {
+        "view": "View",
+        "create": "Create",
+        "edit": "Edit",
+        "delete": "Delete"
+    },
+    "resourcePlurals": {
+        "categories": "categories",
+        "subCategories": "sub-categories",
+        "products": "products",
+        "productTypes": "product types",
+        "units": "units",
+        "presentations": "presentations",
+        "packagings": "packagings",
+        "ingredients": "ingredients",
+        "attributes": "attributes",
+        "addins": "add-ins",
+        "users": "users",
+        "roles": "roles",
+        "permissions": "permissions"
     }
 }

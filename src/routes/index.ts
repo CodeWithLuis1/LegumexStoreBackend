@@ -13,8 +13,23 @@ import productVariantRouter from "../features/product/routes/productVariant.rout
 import productIngredientRouter from "../features/product/routes/productIngredient.routes"
 import productAddinRouter from "../features/product/routes/productAddin.routes"
 import productAttributeRouter from "../features/product/routes/productAttribute.routes"
+import loginRouter from "../features/accessControl/login/routes/login.routes"
+import userRouter from "../features/accessControl/user/routes/user.routes"
+import roleRouter from "../features/accessControl/roles/routes/role.routes"
+import permissionRouter from "../features/accessControl/permissions/routes/permission.routes"
+import rolePermissionRouter from "../features/accessControl/rolePermissions/routes/rolePermission.routes"
+import customerRouter from "../features/customer/routes/customer.routes"
+import customerLoginRouter from "../features/customer/routes/customerLogin.routes"
 
 const appRouter = Router()
+
+appRouter.use("/login", loginRouter)
+appRouter.use("/users", userRouter)
+appRouter.use("/roles", roleRouter)
+appRouter.use("/roles", rolePermissionRouter)
+appRouter.use("/permissions", permissionRouter)
+appRouter.use("/customers", customerRouter)
+appRouter.use("/customer-login", customerLoginRouter)
 
 appRouter.use("/categories", categoryRouter)
 appRouter.use("/sub-categories", subCategoryRouter)

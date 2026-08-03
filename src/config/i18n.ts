@@ -14,5 +14,4 @@ i18next.use(middleware.LanguageDetector).init({
 })
 
 export const i18nextMiddleware = middleware
-
 export default i18next
