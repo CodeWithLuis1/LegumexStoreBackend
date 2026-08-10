@@ -4,8 +4,6 @@ import SubCategory from "../../category/models/SubCategory.model";
 import ProductType from "../../product-type/models/ProductType.model";
 import ProductVariant from "./ProductVariant.model";
 import ProductIngredient from "./ProductIngredient.model";
-import ProductAddin from "./ProductAddin.model";
-import ProductAttribute from "./ProductAttribute.model";
 
 @Table({
     tableName: "products"
@@ -39,37 +37,21 @@ class Product extends BaseCatalogModel {
     declare urlSlug: string
 
     @Column({
-        type: DataType.TEXT,
-        allowNull: true
-    })
-    declare fullDescription: string
-
-    @Column({
         type: DataType.BOOLEAN,
         allowNull: false,
         defaultValue: false
     })
     declare isOrganic: boolean
 
+    // Producto terminado (receta fija en ProductIngredient.quantityValue) vs
+    // producto personalizable (el cliente arma el mix en la cotización, ver
+    // ProductIngredient.minPercentage/maxPercentage y quoteService.calculateQuote).
     @Column({
         type: DataType.BOOLEAN,
         allowNull: false,
         defaultValue: false
     })
     declare isCustomizable: boolean
-
-    @Column({
-        type: DataType.STRING(255),
-        allowNull: true
-    })
-    declare imageUrl: string
-
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-    })
-    declare displayOrder: number
 
     @BelongsTo(() => SubCategory, "subCategoryId")
     declare parentSubCategory: SubCategory
@@ -82,12 +64,6 @@ class Product extends BaseCatalogModel {
 
     @HasMany(() => ProductIngredient, "productId")
     declare productIngredients: ProductIngredient[]
-
-    @HasMany(() => ProductAddin, "productId")
-    declare productAddins: ProductAddin[]
-
-    @HasMany(() => ProductAttribute, "productId")
-    declare productAttributes: ProductAttribute[]
 }
 
 export default Product;

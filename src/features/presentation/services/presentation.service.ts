@@ -3,7 +3,7 @@ import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreatePresentationInput, UpdatePresentationInput } from "../schemas/presentation.schema"
 
 async function listPresentations(): Promise<Presentation[]> {
-    return Presentation.findAll({ where: { isActive: true }, order: [["displayLabel", "ASC"]] })
+    return Presentation.findAll({ where: { isActive: true }, order: [["displayLabel", "DESC"]] })
 }
 
 async function getPresentationById(id: number): Promise<Presentation> {

@@ -26,19 +26,6 @@ class Category extends BaseCatalogModel {
     })
     declare fullDescription: string
 
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-    })
-    declare displayOrder: number
-
-    @Column({
-        type: DataType.DECIMAL(5, 2),
-        allowNull: true
-    })
-    declare defaultMargin: number
-
     @HasMany(() => SubCategory, "categoryId")
     declare subCategories: SubCategory[]
 

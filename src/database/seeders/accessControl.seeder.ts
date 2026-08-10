@@ -23,8 +23,7 @@ const RESOURCE_KEYS = [
     "presentations",
     "packagings",
     "ingredients",
-    "attributes",
-    "addins",
+    "destinations",
     "users",
     "roles",
     "permissions",
@@ -33,11 +32,23 @@ const RESOURCE_KEYS = [
 
 const ACTION_SUFFIXES = ["view", "create", "edit", "delete"] as const
 
-const PERMISSIONS = RESOURCE_KEYS.flatMap(resourceKey =>
-    ACTION_SUFFIXES.map(actionSuffix => ({
-        name: `${resourceKey}:${actionSuffix}`,
-    }))
-)
+// Permisos que no siguen el patrón CRUD completo de arriba. `Quote` es un registro histórico
+// (no un catálogo editable, ver Quote.model.ts) -- el admin solo necesita poder VER todas las
+// cotizaciones que llegan, sin importar el cliente; no existe (ni debe existir) create/edit/delete
+// desde el admin, así que no se agrega "quotes" a RESOURCE_KEYS (eso generaría permisos huérfanos
+// que ningún endpoint usaría jamás).
+const EXTRA_PERMISSIONS = [
+    { name: "quotes:view" },
+]
+
+const PERMISSIONS = [
+    ...RESOURCE_KEYS.flatMap(resourceKey =>
+        ACTION_SUFFIXES.map(actionSuffix => ({
+            name: `${resourceKey}:${actionSuffix}`,
+        }))
+    ),
+    ...EXTRA_PERMISSIONS,
+]
 
 async function seedPermissions(): Promise<void> {
     await Permission.bulkCreate(PERMISSIONS, { ignoreDuplicates: true })

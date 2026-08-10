@@ -29,12 +29,6 @@ class ProductIngredient extends BaseCatalogModel {
     declare ingredientId: number
 
     @Column({
-        type: DataType.DECIMAL(5, 2),
-        allowNull: true
-    })
-    declare proportionPercent: number
-
-    @Column({
         type: DataType.DECIMAL(10, 2),
         allowNull: true
     })
@@ -46,6 +40,21 @@ class ProductIngredient extends BaseCatalogModel {
         allowNull: true
     })
     declare quantityUnitId: number
+
+    // Solo aplican cuando el producto padre es customizable: acotan el % que el
+    // cliente puede pedir de este ingrediente en el mix (ver quoteService).
+    // null = sin límite (0-100 libre).
+    @Column({
+        type: DataType.DECIMAL(5, 2),
+        allowNull: true
+    })
+    declare minPercentage: number
+
+    @Column({
+        type: DataType.DECIMAL(5, 2),
+        allowNull: true
+    })
+    declare maxPercentage: number
 
     @Column({
         type: DataType.INTEGER,

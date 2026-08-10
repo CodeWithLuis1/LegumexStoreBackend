@@ -9,7 +9,7 @@ async function listCustomers(): Promise<Customer[]> {
     return Customer.findAll({
         where: { isActive: true },
         attributes: { exclude: ["password"] },
-        order: [["name", "ASC"]]
+        order: [["name", "DESC"]]
     })
 }
 

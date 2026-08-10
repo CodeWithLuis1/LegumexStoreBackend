@@ -14,7 +14,19 @@
         "invalid_credentials": "Usuario o contraseña inválidos",
         "account_locked": "Cuenta bloqueada por demasiados intentos fallidos. Intenta más tarde",
         "unauthenticated": "Se requiere autenticación",
-        "forbidden": "No tienes permiso para realizar esta acción"
+        "forbidden": "No tienes permiso para realizar esta acción",
+        "pallet_not_configured": "La presentación seleccionada no tiene definidas las unidades por palet. Contacta al administrador para configurarla.",
+        "ingredient_mix_required": "Este producto es personalizable: debes indicar la mezcla de ingredientes.",
+        "presentation_missing_net_weight": "La presentación de esta variante no tiene definido el peso neto. Contacta al administrador para configurarla.",
+        "duplicate_ingredient_in_mix": "El ingrediente {{ingredientId}} está repetido en la mezcla.",
+        "ingredient_not_in_pool": "El ingrediente {{ingredientId}} no está permitido para este producto.",
+        "ingredient_percentage_out_of_range": "El ingrediente {{ingredientId}} debe estar entre {{minPercentage}}% y {{maxPercentage}}%.",
+        "mix_percentage_must_total_100": "La mezcla debe sumar 100% (actual: {{percentageTotal}}%).",
+        "ingredient_not_mixable": "El ingrediente {{ingredientId}} no está marcado como mezclable y no puede usarse en un producto personalizable.",
+        "ingredient_missing_cost_unit": "El ingrediente {{ingredientId}} no tiene una unidad de costeo asignada. Contacta al administrador para configurarla antes de cotizar.",
+        "ingredient_cost_unit_type_mismatch": "El ingrediente {{ingredientId}} tiene una unidad de costeo que no es de peso ({{unitType}}). Debe cotizarse en una unidad de peso (g, kg, lb) para poder calcular el % sobre el peso neto de la presentación.",
+        "product_ingredient_quantity_required": "Debes indicar la cantidad de este ingrediente: es un producto de receta fija, la cantidad no puede quedar vacía.",
+        "invalid_unit_key": "La unidad seleccionada no existe en el catálogo."
     },
     "success": {
         "created": "Creación de {{resource}} exitosa",
@@ -27,19 +39,18 @@
         "Product": "Producto",
         "ProductType": "Tipo de producto",
         "Unit": "Unidad",
-        "Attribute": "Atributo",
-        "Addin": "Adicional",
         "Packaging": "Empaque",
         "Presentation": "Presentación",
         "Ingredient": "Ingrediente",
+        "Destination": "Destino",
         "ProductVariant": "Variante de producto",
         "ProductIngredient": "Ingrediente del producto",
-        "ProductAddin": "Adicional del producto",
-        "ProductAttribute": "Atributo del producto",
+        "ProductVariantPalletMaterial": "Material de paletización de la variante",
         "User": "Usuario",
         "Role": "Rol",
         "Permission": "Permiso",
-        "Customer": "Cliente"
+        "Customer": "Cliente",
+        "Quote": "Cotización"
     },
     "permissionActions": {
         "view": "Ver",
@@ -56,10 +67,10 @@
         "presentations": "presentaciones",
         "packagings": "empaques",
         "ingredients": "ingredientes",
-        "attributes": "atributos",
-        "addins": "adicionales",
+        "destinations": "destinos",
         "users": "usuarios",
         "roles": "roles",
-        "permissions": "permisos"
+        "permissions": "permisos",
+        "quotes": "cotizaciones"
     }
 }

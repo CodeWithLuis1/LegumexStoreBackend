@@ -5,10 +5,9 @@ export const createProductVariantSchema = z.object({
     presentationId: z.number().int().positive().optional(),
     packagingId: z.number().int().positive().optional(),
     skuCode: z.string().trim().max(60).optional(),
-    unitPrice: z.number().optional(),
-    unitCost: z.number().optional(),
-    isPriceManual: z.boolean().optional(),
     minimumOrderQuantity: z.number().int().optional(),
+    unitsPerPallet: z.number().int().positive().optional(),
+    unitsPerBox: z.number().int().positive().optional(),
 })
 
 export const productVariantIdParamSchema = z.object({

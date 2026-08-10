@@ -3,7 +3,7 @@ import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreateProductVariantInput, UpdateProductVariantInput } from "../schemas/productVariant.schema"
 
 async function listProductVariants(): Promise<ProductVariant[]> {
-    return ProductVariant.findAll({ where: { isActive: true }, order: [["id", "ASC"]] })
+    return ProductVariant.findAll({ where: { isActive: true }, order: [["id", "DESC"]] })
 }
 
 async function getProductVariantById(id: number): Promise<ProductVariant> {

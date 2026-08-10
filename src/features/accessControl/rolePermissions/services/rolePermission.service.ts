@@ -14,7 +14,7 @@ async function getPermissionsByRole(roleId: number): Promise<Permission[]> {
             where: { id: roleId },
             required: true
         }],
-        order: [["name", "ASC"]]
+        order: [["name", "DESC"]]
     })
 }
 

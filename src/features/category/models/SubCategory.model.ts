@@ -38,13 +38,6 @@ class SubCategory extends BaseCatalogModel {
     })
     declare fullDescription: string
 
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-    })
-    declare displayOrder: number
-
     @BelongsTo(() => Category, "categoryId")
     declare parentCategory: Category
 

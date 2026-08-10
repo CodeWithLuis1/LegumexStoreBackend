@@ -1,9 +1,10 @@
 import SubCategory from "../models/SubCategory.model"
 import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreateSubCategoryInput, UpdateSubCategoryInput } from "../schemas/subCategory.schema"
+import { generateUniqueSlug } from "../../../shared/utils/slug.util"
 
 async function listSubCategories(): Promise<SubCategory[]> {
-    return SubCategory.findAll({ where: { isActive: true }, order: [["displayOrder", "ASC"]] })
+    return SubCategory.findAll({ where: { isActive: true }, order: [["displayName", "ASC"]] })
 }
 
 async function getSubCategoryById(id: number): Promise<SubCategory> {
@@ -13,7 +14,14 @@ async function getSubCategoryById(id: number): Promise<SubCategory> {
 }
 
 async function createSubCategory(input: CreateSubCategoryInput): Promise<SubCategory> {
-    return SubCategory.create(input)
+    // Unico por categoryId (no global): el mismo slug puede repetirse en categorias distintas.
+    const urlSlug = await generateUniqueSlug(input.displayName, async (candidate) => {
+        const existing = await SubCategory.findOne({
+            where: { categoryId: input.categoryId, urlSlug: candidate },
+        })
+        return !!existing
+    })
+    return SubCategory.create({ ...input, urlSlug })
 }
 
 async function updateSubCategory(id: number, input: UpdateSubCategoryInput): Promise<SubCategory> {

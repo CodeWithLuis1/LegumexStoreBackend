@@ -1,7 +1,7 @@
-import { Table, Column, DataType, ForeignKey, BelongsTo, HasMany } from "sequelize-typescript";
+import { Table, Column, DataType, HasMany } from "sequelize-typescript";
 import BaseCatalogModel from "../../../shared/base-model/BaseCatalogModel";
-import Unit from "../../unit/models/Unit.model";
 import ProductVariant from "../../product/models/ProductVariant.model";
+import ProductVariantPalletMaterial from "../../product/models/ProductVariantPalletMaterial.model";
 
 @Table({
     tableName: "packagings"
@@ -14,6 +14,13 @@ class Packaging extends BaseCatalogModel {
     declare displayName: string
 
     @Column({
+        type: DataType.ENUM("unit", "pallet"),
+        allowNull: false,
+        defaultValue: "unit"
+    })
+    declare packagingRole: string
+
+    @Column({
         type: DataType.STRING(80),
         allowNull: true
     })
@@ -23,26 +30,13 @@ class Packaging extends BaseCatalogModel {
         type: DataType.DECIMAL(10, 2),
         allowNull: true
     })
-    declare capacityValue: number
-
-    @ForeignKey(() => Unit)
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: true
-    })
-    declare capacityUnitId: number
-
-    @Column({
-        type: DataType.DECIMAL(10, 2),
-        allowNull: true
-    })
     declare unitCost: number
-
-    @BelongsTo(() => Unit, "capacityUnitId")
-    declare capacityUnit: Unit
 
     @HasMany(() => ProductVariant, "packagingId")
     declare packagedVariants: ProductVariant[]
+
+    @HasMany(() => ProductVariantPalletMaterial, "packagingId")
+    declare palletMaterialUsages: ProductVariantPalletMaterial[]
 }
 
 export default Packaging;

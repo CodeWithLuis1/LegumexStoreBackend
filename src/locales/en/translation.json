@@ -14,7 +14,19 @@
         "invalid_credentials": "Invalid username or password",
         "account_locked": "Account locked due to too many failed attempts. Try again later",
         "unauthenticated": "Authentication required",
-        "forbidden": "You don't have permission to perform this action"
+        "forbidden": "You don't have permission to perform this action",
+        "pallet_not_configured": "The selected variant does not have units per pallet configured. Contact the administrator to set it up.",
+        "ingredient_mix_required": "This product is customizable: you must provide the ingredient mix.",
+        "presentation_missing_net_weight": "This variant's presentation has no net weight configured. Contact the administrator to set it up.",
+        "duplicate_ingredient_in_mix": "Ingredient {{ingredientId}} is duplicated in the mix.",
+        "ingredient_not_in_pool": "Ingredient {{ingredientId}} is not allowed for this product.",
+        "ingredient_percentage_out_of_range": "Ingredient {{ingredientId}} must be between {{minPercentage}}% and {{maxPercentage}}%.",
+        "mix_percentage_must_total_100": "The mix must total 100% (currently: {{percentageTotal}}%).",
+        "ingredient_not_mixable": "Ingredient {{ingredientId}} is not marked as mixable and cannot be used in a customizable product.",
+        "ingredient_missing_cost_unit": "Ingredient {{ingredientId}} has no cost unit assigned. Contact the administrator to configure it before quoting.",
+        "ingredient_cost_unit_type_mismatch": "Ingredient {{ingredientId}} has a cost unit that is not weight-based ({{unitType}}). It must be quoted in a weight unit (g, kg, lb) so its percentage of the presentation's net weight can be calculated.",
+        "product_ingredient_quantity_required": "You must provide a quantity for this ingredient: this is a fixed-recipe product, quantity cannot be left blank.",
+        "invalid_unit_key": "The selected unit does not exist in the catalog."
     },
     "success": {
         "created": "{{resource}} created successfully",
@@ -27,19 +39,18 @@
         "Product": "Product",
         "ProductType": "Product type",
         "Unit": "Unit",
-        "Attribute": "Attribute",
-        "Addin": "Add-in",
         "Packaging": "Packaging",
         "Presentation": "Presentation",
         "Ingredient": "Ingredient",
+        "Destination": "Destination",
         "ProductVariant": "Product variant",
         "ProductIngredient": "Product ingredient",
-        "ProductAddin": "Product add-in",
-        "ProductAttribute": "Product attribute",
+        "ProductVariantPalletMaterial": "Product variant pallet material",
         "User": "User",
         "Role": "Role",
         "Permission": "Permission",
-        "Customer": "Customer"
+        "Customer": "Customer",
+        "Quote": "Quote"
     },
     "permissionActions": {
         "view": "View",
@@ -56,10 +67,10 @@
         "presentations": "presentations",
         "packagings": "packagings",
         "ingredients": "ingredients",
-        "attributes": "attributes",
-        "addins": "add-ins",
+        "destinations": "destinations",
         "users": "users",
         "roles": "roles",
-        "permissions": "permissions"
+        "permissions": "permissions",
+        "quotes": "quotes"
     }
 }

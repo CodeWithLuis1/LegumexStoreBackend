@@ -1,9 +1,11 @@
 import Unit from "../models/Unit.model";
-import { NotFoundError } from "../../../shared/errors/AppError";
+import { AppError, NotFoundError } from "../../../shared/errors/AppError";
 import { CreateUnitInput, UpdateUnitInput } from "../schemas/unit.schema";
+import { generateUniqueSlug } from "../../../shared/utils/slug.util";
+import { getUnitCatalogEntry } from "../constants/unitCatalog";
 
 async function listUnits(): Promise<Unit[]> {
-    return Unit.findAll({ where: { isActive: true }, order: [["displayName", "ASC"]] });
+    return Unit.findAll({ where: { isActive: true }, order: [["displayName", "DESC"]] });
 }
 
 async function getUnitById(id: number): Promise<Unit> {
@@ -12,13 +14,36 @@ async function getUnitById(id: number): Promise<Unit> {
     return unit;
 }
 
+// displayName/unitType/baseFactor NUNCA vienen del body -- se resuelven del catálogo fijo a
+// partir de unitKey (el zod enum ya garantiza que existe, el "if" es solo defensivo).
+function resolveCatalogEntry(unitKey: string) {
+    const catalogEntry = getUnitCatalogEntry(unitKey);
+    if (!catalogEntry) throw new AppError(422, "errors.invalid_unit_key");
+    return catalogEntry;
+}
+
 async function createUnit(input: CreateUnitInput): Promise<Unit> {
-    return Unit.create(input);
+    const catalogEntry = resolveCatalogEntry(input.unitKey);
+    const unitCode = await generateUniqueSlug(catalogEntry.displayName, async (candidate) => {
+        const existing = await Unit.findOne({ where: { unitCode: candidate } });
+        return !!existing;
+    });
+    return Unit.create({
+        displayName: catalogEntry.displayName,
+        unitType: catalogEntry.unitType,
+        baseFactor: catalogEntry.baseFactor,
+        unitCode,
+    });
 }
 
 async function updateUnit(id: number, input: UpdateUnitInput): Promise<Unit> {
     const unit = await getUnitById(id);
-    return unit.update(input);
+    const catalogEntry = resolveCatalogEntry(input.unitKey);
+    return unit.update({
+        displayName: catalogEntry.displayName,
+        unitType: catalogEntry.unitType,
+        baseFactor: catalogEntry.baseFactor,
+    });
 }
 async function deleteUnit(id: number): Promise<void> {
     const unit = await getUnitById(id);
