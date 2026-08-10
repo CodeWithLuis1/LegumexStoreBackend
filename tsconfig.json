@@ -12,7 +12,8 @@
         "declaration": true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "types": ["node", "jest"]
     },
     "include": ["src/**/*.ts"]
 }
