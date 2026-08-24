@@ -11,7 +11,6 @@ jest.mock("../services/quote.service", () => ({
         listQuotableProducts: jest.fn(),
         listQuoteDestinations: jest.fn(),
         saveQuote: jest.fn(),
-        listCustomerQuotes: jest.fn(),
         listAllQuotes: jest.fn(),
     }
 }))
@@ -28,7 +27,7 @@ const app = buildTestApp("/api/quotes", quoteRouter)
 const customerToken = jwt.sign({ sub: 42, type: "customer" }, "test-secret")
 const staffToken = jwt.sign({ sub: 1, type: "staff", roleId: 1, roleName: "Admin", permissions: ["*"] }, "test-secret")
 
-const validPreviewBody = { productVariantId: 10, destinationId: 900, requestedPallets: 1 }
+const validQuoteBody = { productVariantId: 10, destinationId: 900, requestedPallets: 1 }
 
 describe("quoteRouter (HTTP)", () => {
     describe("autenticación", () => {
@@ -54,81 +53,59 @@ describe("quoteRouter (HTTP)", () => {
         })
     })
 
-    describe("POST /preview", () => {
+    describe("POST / (calcular y guardar)", () => {
         it("400 con detalle de campos si el body no pasa el schema (nunca llega a tocar el service)", async () => {
             const res = await request(app)
-                .post("/api/quotes/preview")
+                .post("/api/quotes")
                 .set("Authorization", `Bearer ${customerToken}`)
                 .send({ requestedPallets: 0 }) // faltan productVariantId/destinationId, y 0 < mínimo de 1 palet
 
             expect(res.status).toBe(400)
             expect(Array.isArray(res.body.details)).toBe(true)
-            expect(quoteService.calculateQuote).not.toHaveBeenCalled()
+            expect(quoteService.saveQuote).not.toHaveBeenCalled()
         })
 
-        it("200 y reenvía el body ya parseado por zod al service", async () => {
-            (quoteService.calculateQuote as jest.Mock).mockResolvedValue({ totalCost: 284 })
-
-            const res = await request(app)
-                .post("/api/quotes/preview")
-                .set("Authorization", `Bearer ${customerToken}`)
-                .send(validPreviewBody)
-
-            expect(res.status).toBe(200)
-            expect(res.body).toEqual({ data: { totalCost: 284 } })
-            expect(quoteService.calculateQuote).toHaveBeenCalledWith(validPreviewBody)
-        })
-
-        it("traduce un AppError del service al statusCode y mensaje en español correctos", async () => {
-            (quoteService.calculateQuote as jest.Mock).mockRejectedValue(new AppError(422, "errors.pallet_not_configured"))
-
-            const res = await request(app)
-                .post("/api/quotes/preview")
-                .set("Authorization", `Bearer ${customerToken}`)
-                .send(validPreviewBody)
-
-            expect(res.status).toBe(422)
-            expect(res.body.message).toBe("La presentación seleccionada no tiene definidas las unidades por palet. Contacta al administrador para configurarla.")
-        })
-
-        it("un error inesperado del service no filtra detalles internos (500 genérico)", async () => {
-            (quoteService.calculateQuote as jest.Mock).mockRejectedValue(new Error("connection reset by peer at 10.0.4.2:5432"))
-            const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {})
-
-            const res = await request(app)
-                .post("/api/quotes/preview")
-                .set("Authorization", `Bearer ${customerToken}`)
-                .send(validPreviewBody)
-
-            expect(res.status).toBe(500)
-            expect(JSON.stringify(res.body)).not.toContain("10.0.4.2")
-            consoleErrorSpy.mockRestore()
-        })
-    })
-
-    describe("POST / (save) y GET /mine", () => {
         it("201 al guardar, usando el id del cliente autenticado (no uno que mande el body)", async () => {
             (quoteService.saveQuote as jest.Mock).mockResolvedValue({ id: 5, totalCost: 284 })
 
             const res = await request(app)
                 .post("/api/quotes")
                 .set("Authorization", `Bearer ${customerToken}`)
-                .send({ ...validPreviewBody, customerId: 999 }) // intento de suplantar a otro cliente
+                .send({ ...validQuoteBody, customerId: 999 }) // intento de suplantar a otro cliente
 
             expect(res.status).toBe(201)
+            expect(res.body.data).toEqual({ id: 5, totalCost: 284 })
             // 42 viene del JWT (customerToken), no del 999 que mandó el body -- customerId ni
-            // siquiera es un campo del schema, así que zod ya lo habría descartado igual.
-            expect(quoteService.saveQuote).toHaveBeenCalledWith(42, validPreviewBody)
+            // siquiera es un campo del schema, así que zod ya lo habría descartado igual. El
+            // tercer argumento es el idioma resuelto de Accept-Language (ver
+            // shared/utils/translation.util.ts) -- este request no lo manda, cae al fallback "es".
+            expect(quoteService.saveQuote).toHaveBeenCalledWith(42, validQuoteBody, "es")
         })
 
-        it("GET /mine devuelve las cotizaciones del cliente autenticado", async () => {
-            (quoteService.listCustomerQuotes as jest.Mock).mockResolvedValue([{ id: 5 }])
+        it("traduce un AppError del service al statusCode y mensaje en español correctos", async () => {
+            (quoteService.saveQuote as jest.Mock).mockRejectedValue(new AppError(422, "errors.pallet_not_configured"))
 
-            const res = await request(app).get("/api/quotes/mine").set("Authorization", `Bearer ${customerToken}`)
+            const res = await request(app)
+                .post("/api/quotes")
+                .set("Authorization", `Bearer ${customerToken}`)
+                .send(validQuoteBody)
 
-            expect(res.status).toBe(200)
-            expect(quoteService.listCustomerQuotes).toHaveBeenCalledWith(42)
-            expect(res.body).toEqual({ data: [{ id: 5 }] })
+            expect(res.status).toBe(422)
+            expect(res.body.message).toBe("La presentación seleccionada no tiene definidas las unidades por palet. Contacta al administrador para configurarla.")
+        })
+
+        it("un error inesperado del service no filtra detalles internos (500 genérico)", async () => {
+            (quoteService.saveQuote as jest.Mock).mockRejectedValue(new Error("connection reset by peer at 10.0.4.2:5432"))
+            const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {})
+
+            const res = await request(app)
+                .post("/api/quotes")
+                .set("Authorization", `Bearer ${customerToken}`)
+                .send(validQuoteBody)
+
+            expect(res.status).toBe(500)
+            expect(JSON.stringify(res.body)).not.toContain("10.0.4.2")
+            consoleErrorSpy.mockRestore()
         })
     })
 })

@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express"
 import { subCategoryService } from "../services/subCategory.service"
+import { SubCategoryQuery } from "../schemas/subCategory.schema"
 
-async function index(_req: Request, res: Response, next: NextFunction): Promise<void> {
+async function index(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-        const subCategories = await subCategoryService.listSubCategories()
-        res.json({ data: subCategories })
+        const { page, limit, search } = req.query as unknown as SubCategoryQuery
+        const result = await subCategoryService.listSubCategories({ page, limit }, search)
+        res.json(result)
     } catch (error) {
         next(error)
     }
@@ -55,10 +57,25 @@ async function destroy(req: Request, res: Response, next: NextFunction): Promise
     }
 }
 
+async function updateStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+        const id = Number(req.params.id)
+        const { isActive } = req.body
+        const subCategory = await subCategoryService.setSubCategoryStatus(id, isActive)
+        res.json({
+            message: req.t(isActive ? "success.activated" : "success.deactivated", { resource: req.t("resources.SubCategory") }),
+            data: subCategory
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
 export const subCategoryController = {
     index,
     show,
     store,
     update,
     destroy,
+    updateStatus,
 }

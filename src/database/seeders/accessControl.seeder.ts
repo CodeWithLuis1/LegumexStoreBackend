@@ -39,6 +39,10 @@ const ACTION_SUFFIXES = ["view", "create", "edit", "delete"] as const
 // que ningún endpoint usaría jamás).
 const EXTRA_PERMISSIONS = [
     { name: "quotes:view" },
+    // Igual que "quotes:view": el dashboard solo lee/agrega datos que ya existen en otras tablas,
+    // no es un catalogo editable -- no aplica create/edit/delete, así que no se agrega "dashboard"
+    // a RESOURCE_KEYS (generaría permisos huérfanos que ningún endpoint usaría jamás).
+    { name: "dashboard:view" },
 ]
 
 const PERMISSIONS = [

@@ -4,6 +4,7 @@ import SubCategory from "../../category/models/SubCategory.model";
 import ProductType from "../../product-type/models/ProductType.model";
 import ProductVariant from "./ProductVariant.model";
 import ProductIngredient from "./ProductIngredient.model";
+import ProductTranslation from "./ProductTranslation.model";
 
 @Table({
     tableName: "products"
@@ -53,6 +54,15 @@ class Product extends BaseCatalogModel {
     })
     declare isCustomizable: boolean
 
+    // URL pública en S3 (o null si el producto todavía no tiene foto). No se versiona ni se
+    // borra en cascada al desactivar el producto -- ver product.service.ts para el manejo de
+    // subida/reemplazo/borrado contra S3.
+    @Column({
+        type: DataType.STRING(500),
+        allowNull: true
+    })
+    declare imageUrl: string | null
+
     @BelongsTo(() => SubCategory, "subCategoryId")
     declare parentSubCategory: SubCategory
 
@@ -64,6 +74,10 @@ class Product extends BaseCatalogModel {
 
     @HasMany(() => ProductIngredient, "productId")
     declare productIngredients: ProductIngredient[]
+
+    // Traducciones a idiomas distintos al español -- ver ProductTranslation.model.ts.
+    @HasMany(() => ProductTranslation, "productId")
+    declare translations: ProductTranslation[]
 }
 
 export default Product;

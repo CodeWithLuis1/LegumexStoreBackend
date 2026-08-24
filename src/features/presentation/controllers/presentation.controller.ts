@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express"
 import { presentationService } from "../services/presentation.service"
+import { PresentationQuery } from "../schemas/presentation.schema"
 
-async function index(_req: Request, res: Response, next: NextFunction): Promise<void> {
+async function index(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-        const presentations = await presentationService.listPresentations()
-        res.json({ data: presentations })
+        const { page, limit, search } = req.query as unknown as PresentationQuery
+        const result = await presentationService.listPresentations({ page, limit }, search)
+        res.json(result)
     } catch (error) {
         next(error)
     }

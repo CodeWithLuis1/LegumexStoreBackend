@@ -41,12 +41,6 @@ class ProductVariant extends BaseCatalogModel {
         type: DataType.INTEGER,
         allowNull: true
     })
-    declare minimumOrderQuantity: number
-
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: true
-    })
     declare unitsPerPallet: number
 
     // Cuántas unidades (bolsas/piezas) entran en UNA caja. No participa en el cálculo de

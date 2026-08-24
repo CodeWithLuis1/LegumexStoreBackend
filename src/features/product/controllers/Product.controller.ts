@@ -1,11 +1,13 @@
 import {Request, Response, NextFunction} from "express"
 import {productService} from "../services/product.service"
+import { ProductQuery } from "../schemas/product.schema"
 
 
-async function index(_req: Request, res: Response, next: NextFunction): Promise<void> {
+async function index(req: Request, res: Response, next: NextFunction): Promise<void> {
     try{
-        const products = await productService.listProducts()
-        res.json({data: products})
+        const { page, limit, search } = req.query as unknown as ProductQuery
+        const result = await productService.listProducts({ page, limit }, search)
+        res.json(result)
     }catch(error){
         next(error)
     }
@@ -59,6 +61,20 @@ async function destroy(req:Request, res:Response, next:NextFunction): Promise<vo
     }
 }
 
+async function updateStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+        const productId = Number(req.params.id)
+        const { isActive } = req.body
+        const product = await productService.setProductStatus(productId, isActive)
+        res.json({
+            message: req.t(isActive ? "success.activated" : "success.deactivated", { resource: req.t("resources.Product") }),
+            data: product
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
 
 export const productController = {
     index,
@@ -66,4 +82,5 @@ export const productController = {
     store,
     update,
     destroy,
+    updateStatus,
 }

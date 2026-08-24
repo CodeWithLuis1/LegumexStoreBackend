@@ -20,6 +20,7 @@ import customerRouter from "../features/customer/routes/customer.routes"
 import customerLoginRouter from "../features/customer/routes/customerLogin.routes"
 import quoteRouter from "../features/quote/routes/quote.routes"
 import adminQuoteRouter from "../features/quote/routes/adminQuote.routes"
+import dashboardRouter from "../features/dashboard/routes/dashboard.routes"
 
 const appRouter = Router()
 
@@ -32,6 +33,7 @@ appRouter.use("/customers", customerRouter)
 appRouter.use("/customer-login", customerLoginRouter)
 appRouter.use("/quotes", quoteRouter)
 appRouter.use("/admin/quotes", adminQuoteRouter)
+appRouter.use("/admin/dashboard", dashboardRouter)
 
 appRouter.use("/categories", categoryRouter)
 appRouter.use("/sub-categories", subCategoryRouter)

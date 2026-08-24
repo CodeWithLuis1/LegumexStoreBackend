@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express"
 import { ingredientService } from "../services/ingredient.service"
+import { IngredientQuery } from "../schemas/ingredient.schema"
 
-async function index(_req: Request, res: Response, next: NextFunction): Promise<void> {
+async function index(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-        const ingredients = await ingredientService.listIngredients()
-        res.json({ data: ingredients })
+        const { page, limit, search } = req.query as unknown as IngredientQuery
+        const result = await ingredientService.listIngredients({ page, limit }, search)
+        res.json(result)
     } catch (error) {
         next(error)
     }

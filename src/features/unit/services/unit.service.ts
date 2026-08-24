@@ -1,11 +1,14 @@
+import { Op, WhereOptions } from "sequelize";
 import Unit from "../models/Unit.model";
 import { AppError, NotFoundError } from "../../../shared/errors/AppError";
 import { CreateUnitInput, UpdateUnitInput } from "../schemas/unit.schema";
 import { generateUniqueSlug } from "../../../shared/utils/slug.util";
 import { getUnitCatalogEntry } from "../constants/unitCatalog";
+import { paginate, PaginatedResult, PaginationParams } from "../../../shared/utils/pagination.util";
 
-async function listUnits(): Promise<Unit[]> {
-    return Unit.findAll({ where: { isActive: true }, order: [["displayName", "DESC"]] });
+async function listUnits(pagination?: PaginationParams, search?: string): Promise<PaginatedResult<Unit>> {
+    const where: WhereOptions = { isActive: true, ...(search ? { displayName: { [Op.iLike]: `%${search}%` } } : {}) }
+    return paginate(Unit, { where, order: [["displayName", "DESC"]] }, pagination);
 }
 
 async function getUnitById(id: number): Promise<Unit> {

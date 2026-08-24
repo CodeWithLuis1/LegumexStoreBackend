@@ -8,7 +8,6 @@ export const createProductVariantPalletMaterialSchema = z.object({
     // cada cotización sin ningún aviso -- justo el tipo de vacío que infla o desinfla el total
     // por palet sin que nadie lo note.
     quantityValue: z.number().positive(),
-    quantityUnitId: z.number().int().positive().optional(),
 })
 
 export const productVariantPalletMaterialIdParamSchema = z.object({

@@ -1,33 +1,69 @@
+import { Op, WhereOptions } from "sequelize"
 import Product from "../models/Product.model"
+import ProductTranslation from "../models/ProductTranslation.model"
 import { NotFoundError } from "../../../shared/errors/AppError"
-import { CreateProductInput, UpdateProductInput } from "../schemas/product.schema"
+import { CreateProductInput, UpdateProductInput, ProductTranslationInput } from "../schemas/product.schema"
 import { generateUniqueSlug } from "../../../shared/utils/slug.util"
+import { resolveCatalogImage } from "../../../shared/utils/catalogImage.util"
+import { paginate, PaginatedResult, PaginationParams } from "../../../shared/utils/pagination.util"
+
+const IMAGE_FOLDER = "products"
 
 async function findActiveProduct(id: number): Promise<Product> {
-    const product = await Product.findOne({ where: { id, isActive: true } })
+    const product = await Product.findOne({
+        where: { id, isActive: true },
+        include: [{ model: ProductTranslation, as: "translations" }]
+    })
     if (!product) throw new NotFoundError("Product", id)
     return product
 }
 
-async function listProducts(): Promise<Product[]> {
-    return Product.findAll({ where: { isActive: true }, order: [["displayName", "ASC"]] })
+// Devuelve activos e inactivos -- es la lista que consume el admin (ProductTable), que necesita
+// ver los productos desactivados para poder reactivarlos. Paginación opt-in -- ver
+// pagination.util.ts.
+async function listProducts(pagination?: PaginationParams, search?: string): Promise<PaginatedResult<Product>> {
+    const where: WhereOptions = search ? { displayName: { [Op.iLike]: `%${search}%` } } : {}
+    return paginate(
+        Product,
+        { where, order: [["isActive", "DESC"], ["displayName", "ASC"]], include: [{ model: ProductTranslation, as: "translations" }] },
+        pagination
+    )
 }
 
 async function getProductById(id: number): Promise<Product> {
     return findActiveProduct(id)
 }
 
+// Mismo patrón que category.service.ts::syncEnglishTranslation -- ver ese comentario. Product
+// solo tiene displayName (no descripción), así que este helper es más chico.
+async function syncEnglishTranslation(productId: number, en: ProductTranslationInput | undefined): Promise<void> {
+    if (!en?.displayName) return
+    const [translation] = await ProductTranslation.findOrCreate({
+        where: { productId, language: "en" },
+        defaults: { productId, language: "en", displayName: en.displayName }
+    })
+    await translation.update({ displayName: en.displayName })
+}
+
 async function createProduct(input: CreateProductInput): Promise<Product> {
-    const urlSlug = await generateUniqueSlug(input.displayName, async (candidate) => {
+    const { image, translations, ...rest } = input
+    const urlSlug = await generateUniqueSlug(rest.displayName, async (candidate) => {
         const existing = await Product.findOne({ where: { urlSlug: candidate } })
         return !!existing
     })
-    return Product.create({ ...input, urlSlug })
+    const imageUrl = await resolveCatalogImage(null, image, IMAGE_FOLDER)
+    const product = await Product.create({ ...rest, urlSlug, imageUrl: imageUrl ?? null })
+    await syncEnglishTranslation(product.id, translations?.en)
+    return findActiveProduct(product.id)
 }
 
 async function updateProduct(id: number, input: UpdateProductInput): Promise<Product> {
     const product = await findActiveProduct(id)
-    return product.update(input)
+    const { image, translations, ...rest } = input
+    const imageUrl = await resolveCatalogImage(product.imageUrl, image, IMAGE_FOLDER)
+    await product.update({ ...rest, ...(imageUrl !== undefined ? { imageUrl } : {}) })
+    await syncEnglishTranslation(id, translations?.en)
+    return findActiveProduct(id)
 }
 
 async function deleteProduct(id: number): Promise<void> {
@@ -35,10 +71,24 @@ async function deleteProduct(id: number): Promise<void> {
     await product.update({ isActive: false })
 }
 
+// A diferencia de findActiveProduct, busca sin filtrar por isActive: el toggle tiene que poder
+// encontrar el producto tanto para desactivarlo (estaba activo) como para reactivarlo (estaba
+// inactivo).
+async function setProductStatus(id: number, isActive: boolean): Promise<Product> {
+    const product = await Product.findOne({
+        where: { id },
+        include: [{ model: ProductTranslation, as: "translations" }]
+    })
+    if (!product) throw new NotFoundError("Product", id)
+    await product.update({ isActive })
+    return product
+}
+
 export const productService = {
     listProducts,
     getProductById,
     createProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    setProductStatus,
 }

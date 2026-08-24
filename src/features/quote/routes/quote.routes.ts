@@ -10,8 +10,9 @@ quoteRouter.use(authenticateCustomer)
 
 quoteRouter.get("/products", quoteController.products)
 quoteRouter.get("/destinations", quoteController.destinations)
-quoteRouter.get("/mine", quoteController.mine)
-quoteRouter.post("/preview", validate(calculateQuoteSchema), quoteController.preview)
+// Único punto de entrada para "calcular": el cliente ya no elige guardar o no -- cada cálculo
+// se persiste de una vez (ver quoteService.saveQuote, siempre recalcula desde cero). El listado
+// de cotizaciones ahora vive solo del lado admin (adminQuote.routes.ts, GET /admin/quotes).
 quoteRouter.post("/", validate(calculateQuoteSchema), quoteController.save)
 
 export default quoteRouter

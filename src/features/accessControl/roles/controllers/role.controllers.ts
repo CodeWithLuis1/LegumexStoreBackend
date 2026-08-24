@@ -1,10 +1,12 @@
 import {roleService} from "../services/role.service"
 import { Request, Response, NextFunction } from "express"
+import { RoleQuery } from "../schemas/role.schema"
 
-async function index(_req: Request, res:Response, next:NextFunction): Promise<void> {
+async function index(req: Request, res:Response, next:NextFunction): Promise<void> {
     try {
-        const roles = await roleService.listRoles()
-        res.json({data: roles})
+        const { page, limit, search } = req.query as unknown as RoleQuery
+        const result = await roleService.listRoles({ page, limit }, search)
+        res.json(result)
     } catch (error) {
         next(error)
     }

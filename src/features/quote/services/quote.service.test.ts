@@ -192,11 +192,15 @@ describe("quoteService.calculateQuote", () => {
                 ]
             })
 
-            expect(result.rawMaterialCost).toBeCloseTo(679.4, 5)
+            // Antes de blindar el motor con decimal.js esto se comparaba con toBeCloseTo porque
+            // la aritmética en floats nativos no garantizaba el centavo exacto (ver money.util.ts).
+            // Ahora sí debe dar exacto -- si vuelve a fallar acá es señal de una regresión de
+            // precisión, no un falso positivo por redondeo.
+            expect(result.rawMaterialCost).toBe(679.4)
             expect(result.unitPackagingCost).toBe(20)
             expect(result.palletMaterialCost).toBe(14)
             expect(result.transportCost).toBe(50)
-            expect(result.totalCost).toBeCloseTo(763.4, 5)
+            expect(result.totalCost).toBe(763.4)
         })
 
         it("rechaza si no se manda ningún mix", async () => {
@@ -231,6 +235,42 @@ describe("quoteService.calculateQuote", () => {
             })
 
             expect(result.totalCost).toBeGreaterThan(0)
+        })
+
+        it("reconcilia exacto al centavo con un mix de 3 ingredientes en tercios (33.34/33.33/33.33) -- caso clásico de arrastre de error en floats nativos", async () => {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 20,
+                parentProduct: {
+                    isCustomizable: true,
+                    displayName: "Mix de tercios",
+                    productIngredients: [
+                        { ingredientId: 1, minPercentage: null, maxPercentage: null, usedIngredient: { displayName: "A", costPerUnit: 17.37, costUnit: { unitType: "weight", baseFactor: 1000 } } },
+                        { ingredientId: 2, minPercentage: null, maxPercentage: null, usedIngredient: { displayName: "B", costPerUnit: 9.21, costUnit: { unitType: "weight", baseFactor: 1000 } } },
+                        { ingredientId: 3, minPercentage: null, maxPercentage: null, usedIngredient: { displayName: "C", costPerUnit: 23.05, costUnit: { unitType: "weight", baseFactor: 1000 } } }
+                    ]
+                },
+                sizePresentation: { displayLabel: "Bolsa 2kg", netWeightGrams: 2000 },
+                usedPackaging: null,
+                palletMaterials: []
+            })
+
+            const result = await quoteService.calculateQuote({
+                ...baseInput,
+                requestedPallets: 7,
+                ingredientMix: [
+                    { ingredientId: 1, percentage: 33.34 },
+                    { ingredientId: 2, percentage: 33.33 },
+                    { ingredientId: 3, percentage: 33.33 }
+                ]
+            })
+
+            // El total debe ser EXACTAMENTE la suma de los lineTotal ya redondeados que se
+            // muestran en el breakdown -- ni un centavo de diferencia entre lo que ve el cliente
+            // línea por línea y el subtotal/total que se guarda en las columnas DECIMAL(12,2).
+            const sumOfLines = result.breakdown.rawMaterials.reduce((sum, line) => sum + line.lineTotal, 0)
+            expect(Math.round(sumOfLines * 100) / 100).toBe(result.rawMaterialCost)
+            expect(result.totalCost).toBe(result.rawMaterialCost + result.transportCost)
         })
 
         it("rechaza un desvío de 0.51 por encima de la tolerancia (borde exclusivo)", async () => {

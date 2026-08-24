@@ -2,7 +2,6 @@ import { Table, Column, DataType, ForeignKey, BelongsTo } from "sequelize-typesc
 import BaseCatalogModel from "../../../shared/base-model/BaseCatalogModel";
 import ProductVariant from "./ProductVariant.model";
 import Packaging from "../../packaging/models/Packaging.model";
-import Unit from "../../unit/models/Unit.model";
 
 @Table({
     tableName: "productVariantPalletMaterials",
@@ -35,21 +34,11 @@ class ProductVariantPalletMaterial extends BaseCatalogModel {
     })
     declare quantityValue: number
 
-    @ForeignKey(() => Unit)
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: true
-    })
-    declare quantityUnitId: number
-
     @BelongsTo(() => ProductVariant, "productVariantId")
     declare parentProductVariant: ProductVariant
 
     @BelongsTo(() => Packaging, "packagingId")
     declare usedPalletMaterial: Packaging
-
-    @BelongsTo(() => Unit, "quantityUnitId")
-    declare quantityUnit: Unit
 }
 
 export default ProductVariantPalletMaterial;

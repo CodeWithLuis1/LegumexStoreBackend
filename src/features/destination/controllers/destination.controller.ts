@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express"
 import { destinationService } from "../services/destination.service"
+import { DestinationQuery } from "../schemas/destination.schema"
 
-async function index(_req: Request, res: Response, next: NextFunction): Promise<void> {
+async function index(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-        const destinations = await destinationService.listDestinations()
-        res.json({ data: destinations })
+        const { page, limit, search, country } = req.query as unknown as DestinationQuery
+        const result = await destinationService.listDestinations({ page, limit }, search, country)
+        res.json(result)
     } catch (error) {
         next(error)
     }

@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import {productTypeService} from "../services/productType.service";
+import { ProductTypeQuery } from "../schemas/productType.schema";
 
-async function index(_req: Request, res: Response, next: NextFunction): Promise<void> {
+async function index(req: Request, res: Response, next: NextFunction): Promise<void> {
     try{
-        const productTypes = await productTypeService.listProductTypes()
-        res.json({data: productTypes})
+        const { page, limit, search } = req.query as unknown as ProductTypeQuery
+        const result = await productTypeService.listProductTypes({ page, limit }, search)
+        res.json(result)
     }catch(error){
         next(error)
     }

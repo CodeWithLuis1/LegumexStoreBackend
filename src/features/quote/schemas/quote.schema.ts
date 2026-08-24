@@ -4,7 +4,11 @@ import z from "zod"
 // el cliente arma la receta a mano y debe sumar 100% (con tolerancia de redondeo, ver quoteService).
 const ingredientMixLineSchema = z.object({
     ingredientId: z.number().int().positive(),
-    percentage: z.number().min(0).max(100),
+    // Tope a 2 decimales -- misma precisión que ProductIngredient.minPercentage/maxPercentage
+    // (DECIMAL(5,2), ver el modelo) y que el paso del input del front (step="0.1"). Evita que
+    // entren porcentajes con precisión falsa (ej. 33.333333333333336, típico de dividir 100/3
+    // en JS) al motor de costeo.
+    percentage: z.number().min(0).max(100).multipleOf(0.01),
 })
 
 export const calculateQuoteSchema = z.object({

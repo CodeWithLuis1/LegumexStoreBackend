@@ -73,15 +73,15 @@ describe("destinationRouter (HTTP) — RBAC cableado en la ruta real", () => {
     })
 
     it("POST / con 'destinations:create' y body válido -> 201", async () => {
-        (destinationService.createDestination as jest.Mock).mockResolvedValue({ id: 2, displayName: "Puerto Barrios", baseCost: 50 })
+        (destinationService.createDestination as jest.Mock).mockResolvedValue({ id: 2, displayName: "Puerto Barrios", baseCost: 50, country: "GT" })
 
         const res = await request(app)
             .post("/api/destinations")
             .set("Authorization", `Bearer ${staffToken(["destinations:create"])}`)
-            .send({ displayName: "Puerto Barrios", baseCost: 50 })
+            .send({ displayName: "Puerto Barrios", baseCost: 50, country: "GT" })
 
         expect(res.status).toBe(201)
-        expect(destinationService.createDestination).toHaveBeenCalledWith({ displayName: "Puerto Barrios", baseCost: 50 })
+        expect(destinationService.createDestination).toHaveBeenCalledWith({ displayName: "Puerto Barrios", baseCost: 50, country: "GT" })
     })
 
     it("DELETE /:id con un id no numérico -> 400 (falla la validación de params antes del permiso de negocio)", async () => {
