@@ -1,15 +1,20 @@
+import { Op, WhereOptions } from "sequelize"
 import {CreateRoleInput,UpdateRoleInput} from "../schemas/role.schema"
 import { NotFoundError } from "../../../../shared/errors/AppError"
 import Role from "../models/role.model"
+import { paginate, PaginatedResult, PaginationParams } from "../../../../shared/utils/pagination.util"
 
-async function listRoles(): Promise<Role[]> {
-    return Role.findAll({where: { isActive: true }, order: [["name", "DESC"]]})
+async function listRoles(pagination?: PaginationParams, search?: string): Promise<PaginatedResult<Role>> {
+    const where: WhereOptions = { isActive: true, ...(search ? { name: { [Op.iLike]: `%${search}%` } } : {}) }
+    return paginate(Role, { where, order: [["name", "DESC"]] }, pagination)
 }
 
 async function getRoleById(id:number): Promise<Role> {
     const role = await Role.findOne({where: {id,isActive:true}})
-    if(!role) throw new NotFoundError("Role",id)
-        return role
+    if(!role) {
+        throw new NotFoundError("Role",id)
+    }
+    return role
 }
 async function createRole(input:CreateRoleInput): Promise<Role> {
     return Role.create(input)

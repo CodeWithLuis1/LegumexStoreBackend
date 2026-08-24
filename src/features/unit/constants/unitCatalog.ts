@@ -26,7 +26,7 @@ export interface UnitCatalogEntry {
     baseFactor: number
 }
 
-export const UNIT_CATALOG: UnitCatalogEntry[] = [
+const UNIT_CATALOG: UnitCatalogEntry[] = [
     { key: "gram", displayName: "Gramo", unitType: "weight", baseFactor: 1 },
     { key: "kilogram", displayName: "Kilogramo", unitType: "weight", baseFactor: 1000 },
     { key: "pound", displayName: "Libra", unitType: "weight", baseFactor: 453.592 },

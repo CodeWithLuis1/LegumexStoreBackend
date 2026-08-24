@@ -1,9 +1,12 @@
+import { Op, WhereOptions } from "sequelize"
 import Presentation from "../models/Presentation.model"
 import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreatePresentationInput, UpdatePresentationInput } from "../schemas/presentation.schema"
+import { paginate, PaginatedResult, PaginationParams } from "../../../shared/utils/pagination.util"
 
-async function listPresentations(): Promise<Presentation[]> {
-    return Presentation.findAll({ where: { isActive: true }, order: [["displayLabel", "DESC"]] })
+async function listPresentations(pagination?: PaginationParams, search?: string): Promise<PaginatedResult<Presentation>> {
+    const where: WhereOptions = { isActive: true, ...(search ? { displayLabel: { [Op.iLike]: `%${search}%` } } : {}) }
+    return paginate(Presentation, { where, order: [["displayLabel", "DESC"]] }, pagination)
 }
 
 async function getPresentationById(id: number): Promise<Presentation> {

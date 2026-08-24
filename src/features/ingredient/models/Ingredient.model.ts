@@ -2,6 +2,7 @@ import { Table, Column, DataType, ForeignKey, BelongsTo, HasMany } from "sequeli
 import BaseCatalogModel from "../../../shared/base-model/BaseCatalogModel";
 import Unit from "../../unit/models/Unit.model";
 import ProductIngredient from "../../product/models/ProductIngredient.model";
+import IngredientTranslation from "./IngredientTranslation.model";
 
 @Table({
     tableName: "ingredients"
@@ -64,6 +65,10 @@ class Ingredient extends BaseCatalogModel {
 
     @HasMany(() => ProductIngredient, "ingredientId")
     declare productIngredients: ProductIngredient[]
+
+    // Traducciones a idiomas distintos al español -- ver IngredientTranslation.model.ts.
+    @HasMany(() => IngredientTranslation, "ingredientId")
+    declare translations: IngredientTranslation[]
 }
 
 export default Ingredient;

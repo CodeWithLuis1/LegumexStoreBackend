@@ -5,7 +5,6 @@ export const createProductVariantSchema = z.object({
     presentationId: z.number().int().positive().optional(),
     packagingId: z.number().int().positive().optional(),
     skuCode: z.string().trim().max(60).optional(),
-    minimumOrderQuantity: z.number().int().optional(),
     unitsPerPallet: z.number().int().positive().optional(),
     unitsPerBox: z.number().int().positive().optional(),
 })

@@ -1,10 +1,12 @@
 import { userService } from "../services/user.service";
 import { Request,Response, NextFunction } from "express";
+import { UserQuery } from "../schemas/user.schema";
 
-async function index(_req:Request, res:Response, next:NextFunction): Promise<void> {
+async function index(req:Request, res:Response, next:NextFunction): Promise<void> {
     try {
-        const users = await userService.listUsers()
-        res.json({data: users})
+        const { page, limit, search } = req.query as unknown as UserQuery
+        const result = await userService.listUsers({ page, limit }, search)
+        res.json(result)
     } catch (error) {
         next(error)
     }
@@ -52,10 +54,25 @@ async function destroy(req:Request, res:Response, next:NextFunction): Promise<vo
     }
 }
 
+async function updateStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+        const userId = Number(req.params.id)
+        const { isActive } = req.body
+        const user = await userService.setUserStatus(userId, isActive)
+        res.json({
+            message: req.t(isActive ? "success.activated" : "success.deactivated", { resource: req.t("resources.User") }),
+            data: user
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
 export const userController = {
     index,
     show,
     store,
     update,
-    destroy
+    destroy,
+    updateStatus,
 }

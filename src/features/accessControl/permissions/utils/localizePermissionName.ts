@@ -1,15 +1,15 @@
 import { Request } from "express"
 import Permission from "../models/permission.model"
 
-const KNOWN_ACTIONS = ["view", "create", "edit", "delete"]
+const KNOWN_ACTIONS = new Set(["view", "create", "edit", "delete"])
 
 // System permissions (seeded) only store a technical "resource:action" name — no human text —
 // so the app stays bilingual. The readable description is composed here at request time from
 // i18next ("permissionActions" + "resourcePlurals"), the same way "resources.*" works elsewhere.
 // Permissions created manually via the API keep whatever description was typed for them.
-export function localizePermissionName(req: Request, name: string, storedDescription: string | null): string | null {
+function localizePermissionName(req: Request, name: string, storedDescription: string | null): string | null {
     const [resource, action] = name.split(":")
-    if (!resource || !action || !KNOWN_ACTIONS.includes(action)) return storedDescription
+    if (!resource || !action || !KNOWN_ACTIONS.has(action)) return storedDescription
 
     const resourceLabel = req.t(`resourcePlurals.${resource}`, { defaultValue: "" })
     if (!resourceLabel) return storedDescription

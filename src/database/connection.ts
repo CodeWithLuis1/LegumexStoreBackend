@@ -4,8 +4,11 @@ import { env } from "../config/env"
 import { runSeeders } from "./seeders"
 
 import Category from "../features/category/models/Category.model"
+import CategoryTranslation from "../features/category/models/CategoryTranslation.model"
 import SubCategory from "../features/category/models/SubCategory.model"
+import SubCategoryTranslation from "../features/category/models/SubCategoryTranslation.model"
 import Product from "../features/product/models/Product.model"
+import ProductTranslation from "../features/product/models/ProductTranslation.model"
 import ProductVariant from "../features/product/models/ProductVariant.model"
 import ProductIngredient from "../features/product/models/ProductIngredient.model"
 import ProductVariantPalletMaterial from "../features/product/models/ProductVariantPalletMaterial.model"
@@ -14,6 +17,7 @@ import Unit from "../features/unit/models/Unit.model"
 import Presentation from "../features/presentation/models/Presentation.model"
 import Packaging from "../features/packaging/models/Packaging.model"
 import Ingredient from "../features/ingredient/models/Ingredient.model"
+import IngredientTranslation from "../features/ingredient/models/IngredientTranslation.model"
 import Destination from "../features/destination/models/Destination.model"
 import User from "../features/accessControl/user/models/user.model"
 import Role from "../features/accessControl/roles/models/role.model"
@@ -22,7 +26,7 @@ import RolePermission from "../features/accessControl/rolePermissions/models/rol
 import Customer from "../features/customer/models/Customer.model"
 import Quote from "../features/quote/models/Quote.model"
 
-export const sequelize = new Sequelize(env.databaseUrl, {
+const sequelize = new Sequelize(env.databaseUrl, {
     logging: env.nodeEnv === "development" ? console.log : false,
     // Sin esto, Sequelize arma el alias de columna de un include anidado concatenando toda la
     // cadena de asociaciones ("parentProduct.productIngredients.usedIngredient.costUnit.unitType").
@@ -44,8 +48,11 @@ export const sequelize = new Sequelize(env.databaseUrl, {
     },
     models: [
         Category,
+        CategoryTranslation,
         SubCategory,
+        SubCategoryTranslation,
         Product,
+        ProductTranslation,
         ProductVariant,
         ProductIngredient,
         ProductVariantPalletMaterial,
@@ -54,6 +61,7 @@ export const sequelize = new Sequelize(env.databaseUrl, {
         Presentation,
         Packaging,
         Ingredient,
+        IngredientTranslation,
         Destination,
         User,
         Role,

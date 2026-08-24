@@ -7,8 +7,10 @@ async function listPermission():Promise<Permission[]> {
 }
 async function getPermissionById(id:number):Promise<Permission> {
     const permission = await Permission.findOne({where:{id,isActive: true}})
-    if(!permission) throw new NotFoundError("Permission",id)
-        return permission
+    if(!permission) {
+        throw new NotFoundError("Permission",id)
+    }
+    return permission
 }
 async function createPermission(input:CreatePermissionInput): Promise<Permission> {
     return Permission.create(input)

@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express"
 import { packagingService } from "../services/packaging.service"
+import { PackagingQuery } from "../schemas/packaging.schema"
 
-async function index(_req: Request, res: Response, next: NextFunction): Promise<void> {
+async function index(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-        const packagings = await packagingService.listPackagings()
-        res.json({ data: packagings })
+        const { page, limit, search } = req.query as unknown as PackagingQuery
+        const result = await packagingService.listPackagings({ page, limit }, search)
+        res.json(result)
     } catch (error) {
         next(error)
     }

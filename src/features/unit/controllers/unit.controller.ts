@@ -1,11 +1,13 @@
 import {unitService} from '../services/unit.service'
 import { Request, Response, NextFunction } from "express";
+import { UnitQuery } from "../schemas/unit.schema";
 
 
-async function index(_req: Request, res: Response, next: NextFunction): Promise<void> {
+async function index(req: Request, res: Response, next: NextFunction): Promise<void> {
     try{
-        const units = await unitService.listUnits()
-        res.json({data: units})
+        const { page, limit, search } = req.query as unknown as UnitQuery
+        const result = await unitService.listUnits({ page, limit }, search)
+        res.json(result)
     }catch(error){
         next(error)
     }

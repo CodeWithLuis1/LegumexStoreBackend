@@ -1,9 +1,16 @@
+import { Op, WhereOptions } from "sequelize"
 import Destination from "../models/Destination.model"
 import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreateDestinationInput, UpdateDestinationInput } from "../schemas/destination.schema"
+import { paginate, PaginatedResult, PaginationParams } from "../../../shared/utils/pagination.util"
 
-async function listDestinations(): Promise<Destination[]> {
-    return Destination.findAll({ where: { isActive: true }, order: [["displayName", "DESC"]] })
+async function listDestinations(pagination?: PaginationParams, search?: string, country?: string): Promise<PaginatedResult<Destination>> {
+    const where: WhereOptions = {
+        isActive: true,
+        ...(search ? { displayName: { [Op.iLike]: `%${search}%` } } : {}),
+        ...(country ? { country } : {}),
+    }
+    return paginate(Destination, { where, order: [["displayName", "DESC"]] }, pagination)
 }
 
 async function getDestinationById(id: number): Promise<Destination> {

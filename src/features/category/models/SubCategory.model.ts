@@ -2,6 +2,7 @@ import { Table, Column, DataType, ForeignKey, BelongsTo, HasMany } from "sequeli
 import BaseCatalogModel from "../../../shared/base-model/BaseCatalogModel";
 import Category from "./Category.model";
 import Product from "../../product/models/Product.model";
+import SubCategoryTranslation from "./SubCategoryTranslation.model";
 
 @Table({
     tableName: "subCategories",
@@ -43,6 +44,10 @@ class SubCategory extends BaseCatalogModel {
 
     @HasMany(() => Product, "subCategoryId")
     declare childProducts: Product[]
+
+    // Traducciones a idiomas distintos al español -- ver SubCategoryTranslation.model.ts.
+    @HasMany(() => SubCategoryTranslation, "subCategoryId")
+    declare translations: SubCategoryTranslation[]
 }
 
 export default SubCategory;

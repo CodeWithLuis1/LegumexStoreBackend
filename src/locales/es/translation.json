@@ -31,7 +31,9 @@
     "success": {
         "created": "Creación de {{resource}} exitosa",
         "updated": "Actualización de {{resource}} exitosa",
-        "deleted": "Eliminación de {{resource}} exitosa"
+        "deleted": "Eliminación de {{resource}} exitosa",
+        "activated": "{{resource}} activado correctamente",
+        "deactivated": "{{resource}} desactivado correctamente"
     },
     "resources": {
         "Category": "Categoría",
@@ -71,6 +73,7 @@
         "users": "usuarios",
         "roles": "roles",
         "permissions": "permisos",
-        "quotes": "cotizaciones"
+        "quotes": "cotizaciones",
+        "dashboard": "panel"
     }
 }

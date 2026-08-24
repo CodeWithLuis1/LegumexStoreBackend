@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express"
 import { customerService } from "../services/customer.service"
+import { CustomerQuery } from "../schemas/customer.schema"
 
-async function index(_req: Request, res: Response, next: NextFunction): Promise<void> {
+async function index(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-        const customers = await customerService.listCustomers()
-        res.json({ data: customers })
+        const { page, limit, search } = req.query as unknown as CustomerQuery
+        const result = await customerService.listCustomers({ page, limit }, search)
+        res.json(result)
     } catch (error) {
         next(error)
     }
@@ -55,10 +57,25 @@ async function destroy(req: Request, res: Response, next: NextFunction): Promise
     }
 }
 
+async function updateStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+        const customerId = Number(req.params.id)
+        const { isActive } = req.body
+        const customer = await customerService.setCustomerStatus(customerId, isActive)
+        res.json({
+            message: req.t(isActive ? "success.activated" : "success.deactivated", { resource: req.t("resources.Customer") }),
+            data: customer
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
 export const customerController = {
     index,
     show,
     store,
     update,
-    destroy
+    destroy,
+    updateStatus,
 }

@@ -1,5 +1,5 @@
 import dotenv from "dotenv"
-import path from "path"
+import path from "node:path"
 
 dotenv.config({ path: path.resolve(__dirname, ".env") })
 
@@ -24,4 +24,7 @@ export const env = {
     awsAccessKeyId: getRequiredEnv("AWS_ACCESS_KEY_ID"),
     awsSecretAccessKey: getRequiredEnv("AWS_SECRET_ACCESS_KEY"),
     awsS3BucketName: getRequiredEnv("AWS_S3_BUCKET_NAME"),
+    // CORS: origen del frontend. Por ahora solo dev (Vite) -- cuando haya dominio de
+    // producción, se agrega vía esta misma variable de entorno, sin tocar server.ts.
+    frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:5173",
 } as const

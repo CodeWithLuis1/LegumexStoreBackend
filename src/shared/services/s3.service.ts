@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3"
+import { randomUUID } from "node:crypto"
 import { env } from "../../config/env"
 
 const s3 = new S3Client({
@@ -24,16 +25,17 @@ export function isBase64Image(value: string): boolean {
 }
 
 export async function uploadImage(base64: string, folder: string): Promise<string> {
-    const mimeType = base64.match(/^data:(image\/\w+);base64,/)?.[1] ?? "image/jpeg"
+    const mimeType = /^data:(image\/\w+);base64,/.exec(base64)?.[1] ?? "image/jpeg"
     const extension = mimeType.split("/")[1]
     const clean = base64.replace(/^data:image\/\w+;base64,/, "")
     const buffer = Buffer.from(clean, "base64")
-    const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`
+    const key = `${folder}/${Date.now()}-${randomUUID()}.${extension}`
 
     await s3.send(new PutObjectCommand({
         Bucket: env.awsS3BucketName,
         Key: key,
         Body: buffer,
+        ACL: 'public-read',
         ContentType: mimeType,
     }))
 

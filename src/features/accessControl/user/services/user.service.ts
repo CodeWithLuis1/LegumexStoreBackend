@@ -1,16 +1,24 @@
 import bcrypt from "bcryptjs"
+import { Op, WhereOptions } from "sequelize"
 import { CreateUserInput, UpdateUserInput } from "../schemas/user.schema";
 import User from "../models/user.model"
 import { NotFoundError } from "../../../../shared/errors/AppError";
+import { paginate, PaginatedResult, PaginationParams } from "../../../../shared/utils/pagination.util";
 
 const PASSWORD_SALT_ROUNDS = 10
 
-async function listUsers(): Promise<User[]> {
-    return User.findAll({
-        where: { isActive: true },
-        attributes: { exclude: ["password"] },
-        order: [["name", "DESC"]]
-    })
+// Devuelve activos e inactivos -- es la lista que consume el admin (UserTable), que necesita ver
+// los usuarios desactivados para poder reactivarlos (ver mismo patrón en category.service.ts /
+// product.service.ts::listCategories/listProducts).
+async function listUsers(pagination?: PaginationParams, search?: string): Promise<PaginatedResult<User>> {
+    const where: WhereOptions = search
+        ? { [Op.or]: [{ name: { [Op.iLike]: `%${search}%` } }, { username: { [Op.iLike]: `%${search}%` } }] }
+        : {}
+    return paginate(
+        User,
+        { where, order: [["isActive", "DESC"], ["name", "DESC"]], attributes: { exclude: ["password"] } },
+        pagination
+    )
 }
 
 async function getUserById(id: number): Promise<User> {
@@ -43,10 +51,21 @@ async function deleteUser(id: number): Promise<void> {
     await user.update({ isActive: false })
 }
 
+// Ver el mismo patrón en category.service.ts::setCategoryStatus / product.service.ts::setProductStatus
+// -- busca sin filtrar por isActive para poder tanto desactivar como reactivar (getUserById no
+// sirve acá porque filtra isActive:true, y dejaría inalcanzable a un usuario ya desactivado).
+async function setUserStatus(id: number, isActive: boolean): Promise<User> {
+    const user = await User.findOne({ where: { id }, attributes: { exclude: ["password"] } })
+    if (!user) throw new NotFoundError("User", id)
+    await user.update({ isActive })
+    return user
+}
+
 export const userService = {
     listUsers,
     getUserById,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    setUserStatus,
 }

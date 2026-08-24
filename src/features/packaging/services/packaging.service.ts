@@ -1,9 +1,12 @@
+import { Op, WhereOptions } from "sequelize"
 import Packaging from "../models/Packaging.model"
 import { NotFoundError } from "../../../shared/errors/AppError"
 import { CreatePackagingInput, UpdatePackagingInput } from "../schemas/packaging.schema"
+import { paginate, PaginatedResult, PaginationParams } from "../../../shared/utils/pagination.util"
 
-async function listPackagings(): Promise<Packaging[]> {
-    return Packaging.findAll({ where: { isActive: true }, order: [["displayName", "DESC"]] })
+async function listPackagings(pagination?: PaginationParams, search?: string): Promise<PaginatedResult<Packaging>> {
+    const where: WhereOptions = { isActive: true, ...(search ? { displayName: { [Op.iLike]: `%${search}%` } } : {}) }
+    return paginate(Packaging, { where, order: [["displayName", "DESC"]] }, pagination)
 }
 
 async function getPackagingById(id: number): Promise<Packaging> {

@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express"
 import { categoryService } from "../services/category.service"
+import { CategoryQuery } from "../schemas/category.schema"
 
-async function index(_req: Request, res: Response, next: NextFunction): Promise<void> {
+async function index(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-        const categories = await categoryService.listCategories()
-        res.json({ data: categories })
+        const { page, limit, search } = req.query as unknown as CategoryQuery
+        const result = await categoryService.listCategories({ page, limit }, search)
+        res.json(result)
     } catch (error) {
         next(error)
     }
@@ -56,10 +58,25 @@ async function destroy(req: Request, res: Response, next: NextFunction): Promise
     }
 }
 
+async function updateStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+        const id = Number(req.params.id)
+        const { isActive } = req.body
+        const category = await categoryService.setCategoryStatus(id, isActive)
+        res.json({
+            message: req.t(isActive ? "success.activated" : "success.deactivated", { resource: req.t("resources.Category") }),
+            data: category
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
 export const categoryController = {
     index,
     show,
     store,
     update,
     destroy,
+    updateStatus,
 }
