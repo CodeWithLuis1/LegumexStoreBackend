@@ -1,19 +1,14 @@
 import { Op } from "sequelize"
+import Decimal from "decimal.js"
 import Quote from "../../quote/models/Quote.model"
 import Customer from "../../customer/models/Customer.model"
 import ProductVariant from "../../product/models/ProductVariant.model"
 import Product from "../../product/models/Product.model"
+import { toDecimal, roundMoney, sumMoney } from "../../../shared/utils/money.util"
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
-// A partir de este numero de dias en el rango, se agrupa la tendencia por semana en vez de por
-// dia -- evita devolver decenas de barras ilegibles cuando el admin pide "todo el tiempo" o un
-// rango de varios meses. ~2 meses de barras diarias siguen siendo legibles.
 const MAX_DAILY_BUCKETS = 62
 const TOP_LIST_LIMIT = 8
-
-// Shape minimo que nos interesa leer del snapshot congelado en Quote.breakdown (ver Quote.model.ts
-// y quoteService.calculateQuote) -- no se importa el tipo completo de quote.service.ts a proposito,
-// el dashboard solo necesita esta porcion y así no se acopla al resto del calculo de cotizacion.
 interface RawMaterialSnapshotLine {
     ingredientId: number
     displayName: string
@@ -101,7 +96,11 @@ function weekKey(date: Date): string {
 
 function buildOverview(quotes: Quote[]): DashboardOverview {
     const totalQuotes = quotes.length
-    const totalRevenue = quotes.reduce((sum, quote) => sum + Number(quote.totalCost), 0)
+    // totalRevenue es dinero -- se suma en decimal.js (sumMoney, mismo punto único de redondeo
+    // que usa quoteService, ver money.util.ts) para no filtrar ruido de floats nativos
+    // (ej. 0.30010000000000003 en vez de 0.3001) directo en el JSON de /admin/dashboard/summary.
+    // totalPallets/totalUnits son conteos enteros, no dinero -- `+` nativo es seguro para esos.
+    const totalRevenue = sumMoney(quotes.map(quote => Number(quote.totalCost)))
     const totalPallets = quotes.reduce((sum, quote) => sum + Number(quote.requestedPallets), 0)
     const totalUnits = quotes.reduce((sum, quote) => sum + Number(quote.totalUnits), 0)
     const uniqueCustomers = new Set(quotes.map(quote => quote.customerId)).size
@@ -112,7 +111,7 @@ function buildOverview(quotes: Quote[]): DashboardOverview {
         totalPallets,
         totalUnits,
         uniqueCustomers,
-        averageQuoteValue: totalQuotes > 0 ? totalRevenue / totalQuotes : 0,
+        averageQuoteValue: totalQuotes > 0 ? roundMoney(toDecimal(totalRevenue).dividedBy(totalQuotes)) : 0,
     }
 }
 
@@ -129,18 +128,23 @@ function buildTrend(
     const spanDays = Math.max(1, Math.ceil((rangeEndMs - rangeStartMs) / MS_PER_DAY) + 1)
     const granularity: "day" | "week" = spanDays > MAX_DAILY_BUCKETS ? "week" : "day"
 
-    const buckets = new Map<string, { count: number; revenue: number }>()
+    // revenue se acumula como Decimal (no Number) mientras se recorren las cotizaciones -- solo
+    // se convierte a Number una vez, al construir `points`, con roundMoney. Sumar en Decimal y
+    // convertir a Number en cada iteración reintroduciría el mismo ruido de floats nativos que
+    // sumMoney existe para evitar (ver money.util.ts): el redondeo debe pasar una sola vez, al
+    // final, no en cada paso intermedio.
+    const buckets = new Map<string, { count: number; revenue: Decimal }>()
     for (const quote of quotes) {
         const createdAt = new Date(quote.get("createdAt") as Date)
         const key = granularity === "week" ? weekKey(createdAt) : dayKey(createdAt)
-        const bucket = buckets.get(key) ?? { count: 0, revenue: 0 }
+        const bucket = buckets.get(key) ?? { count: 0, revenue: new Decimal(0) }
         bucket.count += 1
-        bucket.revenue += Number(quote.totalCost)
+        bucket.revenue = bucket.revenue.plus(quote.totalCost)
         buckets.set(key, bucket)
     }
 
     const points = Array.from(buckets.entries())
-        .map(([bucketStart, value]) => ({ bucketStart, ...value }))
+        .map(([bucketStart, value]) => ({ bucketStart, count: value.count, revenue: roundMoney(value.revenue) }))
         .sort((a, b) => a.bucketStart.localeCompare(b.bucketStart))
 
     return { granularity, points }
@@ -152,8 +156,12 @@ function buildTrend(
 // congelado en la cotizacion, para que un producto renombrado no se parta en dos filas; el nombre
 // mostrado sí es el snapshot mas reciente (las cotizaciones vienen ordenadas ASC por fecha, así
 // que la ultima escritura en el Map es la mas reciente).
+// totalRevenue se acumula en Decimal (no Number) por la misma razón que en buildTrend -- el
+// redondeo a precisión monetaria pasa una sola vez, al convertir a plano en el `map` final.
+type ProductAccumulator = Omit<DashboardTopProduct, "totalRevenue"> & { totalRevenue: Decimal }
+
 function groupProductsByRealId(quotes: Quote[]): DashboardTopProduct[] {
-    const byProduct = new Map<number | string, DashboardTopProduct>()
+    const byProduct = new Map<number | string, ProductAccumulator>()
 
     for (const quote of quotes) {
         const productId = quote.quotedVariant?.parentProduct?.id ?? null
@@ -164,17 +172,17 @@ function groupProductsByRealId(quotes: Quote[]): DashboardTopProduct[] {
             quoteCount: 0,
             totalUnits: 0,
             totalPallets: 0,
-            totalRevenue: 0,
+            totalRevenue: new Decimal(0),
         }
         entry.productDisplayName = quote.productDisplayName
         entry.quoteCount += 1
         entry.totalUnits += Number(quote.totalUnits)
         entry.totalPallets += Number(quote.requestedPallets)
-        entry.totalRevenue += Number(quote.totalCost)
+        entry.totalRevenue = entry.totalRevenue.plus(quote.totalCost)
         byProduct.set(key, entry)
     }
 
-    return Array.from(byProduct.values())
+    return Array.from(byProduct.values()).map(entry => ({ ...entry, totalRevenue: roundMoney(entry.totalRevenue) }))
 }
 
 function buildTopProducts(quotes: Quote[]): DashboardTopProduct[] {
@@ -192,8 +200,10 @@ function buildTopProductsByRevenue(quotes: Quote[]): DashboardTopProduct[] {
         .slice(0, TOP_LIST_LIMIT)
 }
 
+type CustomerAccumulator = Omit<DashboardTopCustomer, "totalRevenue"> & { totalRevenue: Decimal }
+
 function buildTopCustomers(quotes: Quote[]): DashboardTopCustomer[] {
-    const byCustomer = new Map<number, DashboardTopCustomer>()
+    const byCustomer = new Map<number, CustomerAccumulator>()
 
     for (const quote of quotes) {
         const customer = quote.quotingCustomer
@@ -206,15 +216,16 @@ function buildTopCustomers(quotes: Quote[]): DashboardTopCustomer[] {
             email: customer.email,
             quoteCount: 0,
             totalPallets: 0,
-            totalRevenue: 0,
+            totalRevenue: new Decimal(0),
         }
         entry.quoteCount += 1
         entry.totalPallets += Number(quote.requestedPallets)
-        entry.totalRevenue += Number(quote.totalCost)
+        entry.totalRevenue = entry.totalRevenue.plus(quote.totalCost)
         byCustomer.set(customer.id, entry)
     }
 
     return Array.from(byCustomer.values())
+        .map(entry => ({ ...entry, totalRevenue: roundMoney(entry.totalRevenue) }))
         .sort((a, b) => b.totalRevenue - a.totalRevenue)
         .slice(0, TOP_LIST_LIMIT)
 }
@@ -222,8 +233,10 @@ function buildTopCustomers(quotes: Quote[]): DashboardTopCustomer[] {
 // Se rankea por costo total consumido (no por cantidad) porque cada ingrediente puede estar
 // cotizado en una unidad de costeo distinta (kg, lb, litro...) -- sumar cantidades crudas entre
 // ingredientes de unidades distintas no significa nada, pero el costo ya esta en la misma moneda.
+type IngredientAccumulator = Omit<DashboardTopIngredient, "totalCost"> & { totalCost: Decimal }
+
 function buildTopIngredients(quotes: Quote[]): DashboardTopIngredient[] {
-    const byIngredient = new Map<number, DashboardTopIngredient>()
+    const byIngredient = new Map<number, IngredientAccumulator>()
 
     for (const quote of quotes) {
         const breakdown = quote.breakdown as unknown as QuoteBreakdownSnapshot
@@ -232,16 +245,17 @@ function buildTopIngredients(quotes: Quote[]): DashboardTopIngredient[] {
                 ingredientId: line.ingredientId,
                 displayName: line.displayName,
                 quoteCount: 0,
-                totalCost: 0,
+                totalCost: new Decimal(0),
             }
             entry.displayName = line.displayName
             entry.quoteCount += 1
-            entry.totalCost += Number(line.lineTotal)
+            entry.totalCost = entry.totalCost.plus(line.lineTotal)
             byIngredient.set(line.ingredientId, entry)
         }
     }
 
     return Array.from(byIngredient.values())
+        .map(entry => ({ ...entry, totalCost: roundMoney(entry.totalCost) }))
         .sort((a, b) => b.totalCost - a.totalCost)
         .slice(0, TOP_LIST_LIMIT)
 }

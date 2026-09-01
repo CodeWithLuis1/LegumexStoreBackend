@@ -112,6 +112,31 @@ describe("quoteService.calculateQuote", () => {
             expect(result.totalCost).toBe(284)
         })
 
+        it("conserva hasta 4 decimales de precisión en vez de redondear a centavos (2026-08-24, a pedido explícito del usuario)", async () => {
+            // costPerUnit con 4 decimales significativos * quantityValue exacto -> el lineTotal
+            // real tiene 4 decimales (0.1234). Si el motor todavía redondeara a 2 decimales
+            // (comportamiento viejo), este valor se habría truncado a 0.12, perdiendo 0.0034 por
+            // unidad -- insignificante en una unidad, pero real y acumulable a escala de palet.
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 1,
+                parentProduct: {
+                    isCustomizable: false,
+                    productIngredients: [
+                        { ingredientId: 1, quantityValue: 1, usedIngredient: { displayName: "Trazas", costPerUnit: 0.1234 } }
+                    ]
+                },
+                usedPackaging: null,
+                palletMaterials: []
+            })
+
+            const result = await quoteService.calculateQuote(baseInput)
+
+            // rawMaterialCost = 0.1234 * 1 * 1 = 0.1234 -- exacto, no 0.12
+            expect(result.rawMaterialCost).toBe(0.1234)
+            expect(result.breakdown.rawMaterials[0].lineTotal).toBe(0.1234)
+        })
+
         it("multiplica el costo de materiales de palet por la cantidad de palets solicitados, no por totalUnits", async () => {
             stubFixedRecipeVariant()
 
@@ -135,6 +160,237 @@ describe("quoteService.calculateQuote", () => {
 
             expect(result.unitPackagingCost).toBe(0)
             expect(result.breakdown.unitPackaging).toBeNull()
+        })
+
+        it("intermediatePackagingCost queda en 0 y el breakdown en null cuando la variante no tiene empaque intermedio (caso normal, la mayoría de variantes)", async () => {
+            stubFixedRecipeVariant()
+
+            const result = await quoteService.calculateQuote(baseInput)
+
+            expect(result.intermediatePackagingCost).toBe(0)
+            expect(result.breakdown.intermediatePackaging).toBeNull()
+        })
+
+        it("no revienta con un ingrediente gratis (costPerUnit = 0) -- la línea da 0, no NaN/undefined", async () => {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 20,
+                parentProduct: {
+                    isCustomizable: false,
+                    productIngredients: [
+                        { ingredientId: 1, quantityValue: 5, usedIngredient: { displayName: "Agua", costPerUnit: 0 } }
+                    ]
+                },
+                usedPackaging: null,
+                palletMaterials: []
+            })
+
+            const result = await quoteService.calculateQuote(baseInput)
+
+            expect(result.rawMaterialCost).toBe(0)
+            expect(result.breakdown.rawMaterials[0].lineTotal).toBe(0)
+            expect(Number.isNaN(result.totalCost)).toBe(false)
+        })
+
+        it("no revienta con quantityValue = 0 en un material de palet -- la línea da 0, no negativo ni NaN", async () => {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 20,
+                parentProduct: { isCustomizable: false, productIngredients: [] },
+                usedPackaging: null,
+                palletMaterials: [
+                    { packagingId: 6, quantityValue: 0, usedPalletMaterial: { displayName: "Caja corrugada", unitCost: 5 } }
+                ]
+            })
+
+            const result = await quoteService.calculateQuote(baseInput)
+
+            expect(result.palletMaterialCost).toBe(0)
+            expect(result.breakdown.palletMaterials[0].lineTotal).toBe(0)
+        })
+
+        it("reconcilia exacto (sin arrastre de precisión) con 3 ingredientes de receta fija en costos que drift en floats nativos", async () => {
+            // Mismo espíritu que el test de "tercios" del mix personalizable, pero para
+            // buildFixedRecipeRawMaterials -- es una función separada con la misma clase de
+            // riesgo de precisión, no puede asumirse cubierta solo porque la rama customizable
+            // ya se probó.
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 1,
+                parentProduct: {
+                    isCustomizable: false,
+                    productIngredients: [
+                        { ingredientId: 1, quantityValue: 1, usedIngredient: { displayName: "A", costPerUnit: 0.1 } },
+                        { ingredientId: 2, quantityValue: 1, usedIngredient: { displayName: "B", costPerUnit: 0.2 } },
+                        { ingredientId: 3, quantityValue: 1, usedIngredient: { displayName: "C", costPerUnit: 0.0001 } }
+                    ]
+                },
+                usedPackaging: null,
+                palletMaterials: []
+            })
+
+            const result = await quoteService.calculateQuote(baseInput)
+
+            // 0.1 + 0.2 + 0.0001 da 0.30010000000000003 con `+` nativo -- debe dar exacto 0.3001.
+            expect(result.rawMaterialCost).toBe(0.3001)
+        })
+
+        it("escala sin arrastre de precisión con cantidades grandes de palets (multiplicación a gran escala)", async () => {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 500,
+                parentProduct: {
+                    isCustomizable: false,
+                    productIngredients: [
+                        { ingredientId: 1, quantityValue: 0.3333, usedIngredient: { displayName: "A", costPerUnit: 7.77 } }
+                    ]
+                },
+                usedPackaging: { id: 5, displayName: "Bolsa", unitCost: 1.11 },
+                palletMaterials: []
+            })
+
+            const result = await quoteService.calculateQuote({ ...baseInput, requestedPallets: 10000 })
+
+            expect(result.totalUnits).toBe(5000000)
+            // El total debe reconciliar exacto con la suma de los subtotales que ve el cliente,
+            // sin importar la escala del cálculo.
+            expect(result.totalCost).toBe(
+                result.rawMaterialCost + result.unitPackagingCost + result.intermediatePackagingCost + result.palletMaterialCost + result.transportCost
+            )
+            expect(Number.isFinite(result.totalCost)).toBe(true)
+        })
+    })
+
+    describe("receta fija con unidad de receta distinta a la de costeo (2026-08-27, se compra por libra, se usa por gramo)", () => {
+        it("convierte quantityValue de quantityUnit a costUnit con baseFactor antes de multiplicar por costPerUnit", async () => {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 1,
+                parentProduct: {
+                    isCustomizable: false,
+                    productIngredients: [
+                        {
+                            ingredientId: 1,
+                            quantityValue: 100,
+                            quantityUnit: { unitType: "weight", baseFactor: 1 }, // gramo
+                            usedIngredient: {
+                                displayName: "Sal",
+                                costPerUnit: 10, // por libra
+                                costUnit: { unitType: "weight", baseFactor: 453.592 }
+                            }
+                        }
+                    ]
+                },
+                usedPackaging: null,
+                palletMaterials: []
+            })
+
+            const result = await quoteService.calculateQuote(baseInput)
+
+            // 100g / 453.592 (g por libra) = 0.220462 lb -- rounding-safe, ver decimal.js.
+            // rawMaterialCost = costPerUnit(10) * 0.220462... * totalUnits(1), redondeado a 4 decimales.
+            expect(result.rawMaterialCost).toBe(2.2046)
+        })
+
+        it("mantiene el comportamiento histórico si la línea no tiene quantityUnit configurado (dato viejo, no rompe recetas ya cargadas)", async () => {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 1,
+                parentProduct: {
+                    isCustomizable: false,
+                    productIngredients: [
+                        { ingredientId: 1, quantityValue: 0.5, usedIngredient: { displayName: "Piña", costPerUnit: 20 } }
+                    ]
+                },
+                usedPackaging: null,
+                palletMaterials: []
+            })
+
+            const result = await quoteService.calculateQuote(baseInput)
+
+            expect(result.rawMaterialCost).toBe(10) // 20 * 0.5, sin conversión
+        })
+
+        it("rechaza si quantityUnit y costUnit no son del mismo tipo (ej. receta en litros, costeo por libra)", async () => {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 1,
+                parentProduct: {
+                    isCustomizable: false,
+                    productIngredients: [
+                        {
+                            ingredientId: 1,
+                            quantityValue: 100,
+                            quantityUnit: { unitType: "volume", baseFactor: 1 },
+                            usedIngredient: { costPerUnit: 10, costUnit: { unitType: "weight", baseFactor: 453.592 } }
+                        }
+                    ]
+                },
+                usedPackaging: null,
+                palletMaterials: []
+            })
+
+            await expect(quoteService.calculateQuote(baseInput)).rejects.toMatchObject({
+                key: "errors.product_ingredient_quantity_unit_type_mismatch"
+            })
+        })
+    })
+
+    describe("empaque intermedio (bolsa grande que agrupa varias unidades, ej. bolsitas dentro de una bolsa grande)", () => {
+        function stubVariantWithIntermediatePackaging(unitsPerIntermediatePackage: number | null): void {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 20,
+                unitsPerIntermediatePackage,
+                parentProduct: {
+                    isCustomizable: false,
+                    displayName: "Snack en Porciones",
+                    productIngredients: [
+                        { ingredientId: 1, quantityValue: 0.5, usedIngredient: { displayName: "Piña", costPerUnit: 20 } }
+                    ]
+                },
+                sizePresentation: { displayLabel: "Bolsita 100g", netWeightGrams: 100 },
+                usedPackaging: { id: 5, displayName: "Bolsita individual", unitCost: 1 },
+                usedIntermediatePackaging: { id: 8, displayName: "Bolsa grande", unitCost: 3 },
+                palletMaterials: [
+                    { packagingId: 6, quantityValue: 10, usedPalletMaterial: { displayName: "Caja corrugada", unitCost: 1 } }
+                ]
+            })
+        }
+
+        it("calcula el costo del empaque intermedio dividiendo totalUnits entre unitsPerIntermediatePackage y lo suma al total", async () => {
+            // totalUnits = 20 (1 palet * 20 unidades/palet), 10 bolsitas por bolsa grande -> 2 bolsas grandes exactas
+            stubVariantWithIntermediatePackaging(10)
+
+            const result = await quoteService.calculateQuote(baseInput)
+
+            expect(result.breakdown.intermediatePackaging).toMatchObject({
+                packagingId: 8,
+                displayName: "Bolsa grande",
+                unitCost: 3,
+                unitsPerPackage: 10,
+                totalUnits: 20,
+                packagesNeeded: 2
+            })
+            expect(result.intermediatePackagingCost).toBe(6) // 3 * 2
+            // rawMaterialCost(200) + unitPackagingCost(20) + intermediatePackagingCost(6) + palletMaterialCost(10) + transportCost(50)
+            expect(result.totalCost).toBe(286)
+        })
+
+        it("redondea hacia arriba (ceil) cuando totalUnits no es múltiplo exacto de unitsPerIntermediatePackage -- no se compra una fracción de bolsa grande", async () => {
+            // totalUnits = 20, 7 bolsitas por bolsa grande -> 20/7 = 2.857... debe comprar 3 bolsas grandes, no 2.857
+            stubVariantWithIntermediatePackaging(7)
+
+            const result = await quoteService.calculateQuote(baseInput)
+
+            expect(result.breakdown.intermediatePackaging?.packagesNeeded).toBe(3)
+            expect(result.intermediatePackagingCost).toBe(9) // 3 * 3
+        })
+
+        it("rechaza si la variante tiene empaque intermedio pero no unitsPerIntermediatePackage (dato viejo/incompleto, no asume nada en silencio)", async () => {
+            stubVariantWithIntermediatePackaging(null)
+
+            await expect(quoteService.calculateQuote(baseInput)).rejects.toMatchObject({ key: "errors.intermediate_packaging_missing_units" })
         })
     })
 
@@ -237,7 +493,7 @@ describe("quoteService.calculateQuote", () => {
             expect(result.totalCost).toBeGreaterThan(0)
         })
 
-        it("reconcilia exacto al centavo con un mix de 3 ingredientes en tercios (33.34/33.33/33.33) -- caso clásico de arrastre de error en floats nativos", async () => {
+        it("reconcilia exacto (sin diferencia de precisión) con un mix de 3 ingredientes en tercios (33.34/33.33/33.33) -- caso clásico de arrastre de error en floats nativos", async () => {
             mockVariantFindOne.mockResolvedValue({
                 id: 10,
                 unitsPerPallet: 20,
@@ -266,10 +522,14 @@ describe("quoteService.calculateQuote", () => {
             })
 
             // El total debe ser EXACTAMENTE la suma de los lineTotal ya redondeados que se
-            // muestran en el breakdown -- ni un centavo de diferencia entre lo que ve el cliente
-            // línea por línea y el subtotal/total que se guarda en las columnas DECIMAL(12,2).
+            // muestran en el breakdown -- ni una diferencia de precisión entre lo que ve el
+            // cliente línea por línea y el subtotal/total que se guarda en las columnas DECIMAL
+            // (4 decimales, ver MONEY_DECIMALS en money.util.ts). El `* 10000 / 10000` de abajo
+            // no es la regla de negocio -- es solo para neutralizar el ruido de floats nativos
+            // del `reduce` con `+` de esta línea (a propósito, para no depender de decimal.js
+            // acá y probar el dato tal como lo vería un consumidor externo del JSON).
             const sumOfLines = result.breakdown.rawMaterials.reduce((sum, line) => sum + line.lineTotal, 0)
-            expect(Math.round(sumOfLines * 100) / 100).toBe(result.rawMaterialCost)
+            expect(Math.round(sumOfLines * 10000) / 10000).toBe(result.rawMaterialCost)
             expect(result.totalCost).toBe(result.rawMaterialCost + result.transportCost)
         })
 
@@ -336,6 +596,127 @@ describe("quoteService.calculateQuote", () => {
 
             await expect(
                 quoteService.calculateQuote({ ...baseInput, ingredientMix: [{ ingredientId: 1, percentage: 80 }] })
+            ).rejects.toMatchObject({ key: "errors.ingredient_percentage_out_of_range" })
+        })
+
+        it("acepta un porcentaje justo en el borde inclusivo del límite min/max (no lo rechaza por ser el borde)", async () => {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 20,
+                parentProduct: {
+                    isCustomizable: true,
+                    productIngredients: [
+                        {
+                            ingredientId: 1,
+                            minPercentage: 20,
+                            maxPercentage: 30,
+                            usedIngredient: { costPerUnit: 20, costUnit: { unitType: "weight", baseFactor: 1000 } }
+                        },
+                        {
+                            ingredientId: 2,
+                            minPercentage: null,
+                            maxPercentage: null,
+                            usedIngredient: { costPerUnit: 10, costUnit: { unitType: "weight", baseFactor: 1000 } }
+                        }
+                    ]
+                },
+                sizePresentation: { netWeightGrams: 2000 },
+                usedPackaging: null,
+                palletMaterials: []
+            })
+
+            // percentage=20 es exactamente minPercentage -- la condición es `< min || > max`, así
+            // que el borde debe aceptarse, no rechazarse.
+            const result = await quoteService.calculateQuote({
+                ...baseInput,
+                ingredientMix: [
+                    { ingredientId: 1, percentage: 20 },
+                    { ingredientId: 2, percentage: 80 }
+                ]
+            })
+
+            expect(result.totalCost).toBeGreaterThan(0)
+        })
+
+        it("cuando el admin solo puso maxPercentage (minPercentage null), el mínimo real queda en 0", async () => {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 20,
+                parentProduct: {
+                    isCustomizable: true,
+                    productIngredients: [
+                        {
+                            ingredientId: 1,
+                            minPercentage: null,
+                            maxPercentage: 50,
+                            usedIngredient: { costPerUnit: 20, costUnit: { unitType: "weight", baseFactor: 1000 } }
+                        },
+                        {
+                            ingredientId: 2,
+                            minPercentage: null,
+                            maxPercentage: null,
+                            usedIngredient: { costPerUnit: 10, costUnit: { unitType: "weight", baseFactor: 1000 } }
+                        }
+                    ]
+                },
+                sizePresentation: { netWeightGrams: 2000 },
+                usedPackaging: null,
+                palletMaterials: []
+            })
+
+            // percentage=1 (casi 0) debe aceptarse -- min real es 0, no hay piso implícito.
+            const result = await quoteService.calculateQuote({
+                ...baseInput,
+                ingredientMix: [
+                    { ingredientId: 1, percentage: 1 },
+                    { ingredientId: 2, percentage: 99 }
+                ]
+            })
+            expect(result.totalCost).toBeGreaterThan(0)
+
+            // percentage=51 (por encima de maxPercentage=50) debe rechazarse.
+            await expect(
+                quoteService.calculateQuote({
+                    ...baseInput,
+                    ingredientMix: [
+                        { ingredientId: 1, percentage: 51 },
+                        { ingredientId: 2, percentage: 49 }
+                    ]
+                })
+            ).rejects.toMatchObject({ key: "errors.ingredient_percentage_out_of_range" })
+        })
+
+        it("cuando el admin solo puso minPercentage (maxPercentage null), el máximo real queda en 100", async () => {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 20,
+                parentProduct: {
+                    isCustomizable: true,
+                    productIngredients: [
+                        {
+                            ingredientId: 1,
+                            minPercentage: 50,
+                            maxPercentage: null,
+                            usedIngredient: { costPerUnit: 20, costUnit: { unitType: "weight", baseFactor: 1000 } }
+                        }
+                    ]
+                },
+                sizePresentation: { netWeightGrams: 2000 },
+                usedPackaging: null,
+                palletMaterials: []
+            })
+
+            // percentage=100 (por encima del min pero sin tope explícito) debe aceptarse -- max
+            // real es 100, no hay techo implícito.
+            const result = await quoteService.calculateQuote({
+                ...baseInput,
+                ingredientMix: [{ ingredientId: 1, percentage: 100 }]
+            })
+            expect(result.totalCost).toBeGreaterThan(0)
+
+            // percentage=49 (por debajo de minPercentage=50) debe rechazarse.
+            await expect(
+                quoteService.calculateQuote({ ...baseInput, ingredientMix: [{ ingredientId: 1, percentage: 49 }] })
             ).rejects.toMatchObject({ key: "errors.ingredient_percentage_out_of_range" })
         })
 

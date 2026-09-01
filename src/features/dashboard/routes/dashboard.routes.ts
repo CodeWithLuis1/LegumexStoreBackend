@@ -5,8 +5,7 @@ import { authenticate } from "../../../shared/middlewares/authenticate"
 import { authorize } from "../../../shared/middlewares/authorize"
 import { dashboardSummaryQuerySchema } from "../schemas/dashboard.schema"
 
-// Solo lectura, staff (JWT tipo "staff"): igual que adminQuoteRouter, no hay create/edit/delete
-// para este recurso -- el dashboard solo agrega datos que ya existen en otras tablas.
+
 const dashboardRouter = Router()
 
 dashboardRouter.use(authenticate)

@@ -1,18 +1,23 @@
 import { Router } from "express"
+import multer from "multer"
 import { quoteController } from "../controllers/quote.controller"
 import { validate } from "../../../shared/middlewares/validate"
 import { authenticateCustomer } from "../../../shared/middlewares/authenticateCustomer"
-import { calculateQuoteSchema } from "../schemas/quote.schema"
+import { calculateQuoteSchema, sendQuotePdfEmailSchema } from "../schemas/quote.schema"
 
 const quoteRouter = Router()
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+})
 
 quoteRouter.use(authenticateCustomer)
 
 quoteRouter.get("/products", quoteController.products)
 quoteRouter.get("/destinations", quoteController.destinations)
-// Único punto de entrada para "calcular": el cliente ya no elige guardar o no -- cada cálculo
-// se persiste de una vez (ver quoteService.saveQuote, siempre recalcula desde cero). El listado
-// de cotizaciones ahora vive solo del lado admin (adminQuote.routes.ts, GET /admin/quotes).
+quoteRouter.get("/exchange-rate", quoteController.exchangeRate)
 quoteRouter.post("/", validate(calculateQuoteSchema), quoteController.save)
+quoteRouter.post("/send-email", upload.single("file"), validate(sendQuotePdfEmailSchema), quoteController.sendPdfEmail)
 
 export default quoteRouter

@@ -148,17 +148,7 @@
 <a name='L83'></a><a href='#L83'>83</a>
 <a name='L84'></a><a href='#L84'>84</a>
 <a name='L85'></a><a href='#L85'>85</a>
-<a name='L86'></a><a href='#L86'>86</a>
-<a name='L87'></a><a href='#L87'>87</a>
-<a name='L88'></a><a href='#L88'>88</a>
-<a name='L89'></a><a href='#L89'>89</a>
-<a name='L90'></a><a href='#L90'>90</a>
-<a name='L91'></a><a href='#L91'>91</a>
-<a name='L92'></a><a href='#L92'>92</a>
-<a name='L93'></a><a href='#L93'>93</a>
-<a name='L94'></a><a href='#L94'>94</a>
-<a name='L95'></a><a href='#L95'>95</a>
-<a name='L96'></a><a href='#L96'>96</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L86'></a><a href='#L86'>86</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -168,10 +158,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -189,10 +175,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -231,8 +213,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -264,10 +244,6 @@ import { CreateCategoryInput, UpdateCategoryInput, CategoryTranslationInput } fr
 &nbsp;
 const IMAGE_FOLDER = <span class="cstat-no" title="statement not covered" >"categories"</span>
 &nbsp;
-// Devuelve activas e inactivas -- es la lista que consume el admin (CategoryTable), que necesita
-// ver las categorías desactivadas para poder reactivarlas. Paginación opt-in: ver pagination.util.ts
-// -- sin "page" se comporta igual que antes (findAll completo), así CategorySelect sigue trayendo
-// todas las categorías sin cambios.
 async function <span class="fstat-no" title="function not covered" >listCategories(</span>pagination?: PaginationParams, search?: string): Promise&lt;PaginatedResult&lt;Category&gt;&gt; {
     const where: WhereOptions = <span class="cstat-no" title="statement not covered" >search ? { displayName: { [Op.iLike]: `%${search}%` } } : {}</span>
 <span class="cstat-no" title="statement not covered" >    return paginate(</span>
@@ -286,10 +262,6 @@ async function <span class="fstat-no" title="function not covered" >getCategoryB
 <span class="cstat-no" title="statement not covered" >    return category</span>
 }
 &nbsp;
-// Crea o actualiza la fila de traducción en inglés según lo que venga en el body. Mismo espíritu
-// que el manejo de "image" en este service: bloque "en" ausente o sin displayName = no se toca
-// nada (no hay forma de borrar la traducción una vez creada -- no hacía falta, ver memoria del
-// proyecto sobre por qué acá se prefiere lo mínimo necesario antes que una feature completa).
 async function <span class="fstat-no" title="function not covered" >syncEnglishTranslation(</span>categoryId: number, en: CategoryTranslationInput | undefined): Promise&lt;void&gt; {
 <span class="cstat-no" title="statement not covered" >    if (!en?.displayName) <span class="cstat-no" title="statement not covered" >return</span></span>
     const [translation] = <span class="cstat-no" title="statement not covered" >await CategoryTranslation.findOrCreate({</span>
@@ -328,8 +300,6 @@ async function <span class="fstat-no" title="function not covered" >deleteCatego
 <span class="cstat-no" title="statement not covered" >    await category.update({ isActive: false })</span>
 }
 &nbsp;
-// Ver el mismo patrón en product.service.ts::setProductStatus -- busca sin filtrar por isActive
-// para poder tanto desactivar como reactivar.
 async function <span class="fstat-no" title="function not covered" >setCategoryStatus(</span>id: number, isActive: boolean): Promise&lt;Category&gt; {
     const category = <span class="cstat-no" title="statement not covered" >await Category.findOne({</span>
         where: { id },
@@ -355,7 +325,7 @@ export const <span class="cstat-no" title="statement not covered" >categoryServi
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-20T16:12:20.293Z
+                at 2026-09-01T20:49:48.552Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

@@ -1,12 +1,4 @@
-// Catálogo fijo de unidades permitidas. Es la única fuente de verdad para displayName/
-// unitType/baseFactor -- el admin ya NO escribe el factor base ni el tipo a mano al crear una
-// Unidad, solo elige de esta lista (ver unit.service.ts). Esto elimina la clase de error que
-// causaba costos inflados/desinflados por un baseFactor mal tipeado (ver quote.service.ts,
-// donde baseFactor decide la conversión gramos -> unidad de costeo en productos personalizables).
-//
-// Para agregar una nueva unidad: sumar una entrada aquí (y su espejo en el frontend,
-// frontendLegumexStore/src/feature/unit/constant/unitCatalog.ts). No se edita a mano en el
-// admin, así que ambos archivos deben mantenerse sincronizados manualmente.
+
 export type UnitCatalogKey =
     | "gram"
     | "kilogram"

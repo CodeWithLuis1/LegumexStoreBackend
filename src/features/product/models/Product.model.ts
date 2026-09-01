@@ -44,9 +44,7 @@ class Product extends BaseCatalogModel {
     })
     declare isOrganic: boolean
 
-    // Producto terminado (receta fija en ProductIngredient.quantityValue) vs
-    // producto personalizable (el cliente arma el mix en la cotización, ver
-    // ProductIngredient.minPercentage/maxPercentage y quoteService.calculateQuote).
+
     @Column({
         type: DataType.BOOLEAN,
         allowNull: false,
@@ -54,9 +52,7 @@ class Product extends BaseCatalogModel {
     })
     declare isCustomizable: boolean
 
-    // URL pública en S3 (o null si el producto todavía no tiene foto). No se versiona ni se
-    // borra en cascada al desactivar el producto -- ver product.service.ts para el manejo de
-    // subida/reemplazo/borrado contra S3.
+
     @Column({
         type: DataType.STRING(500),
         allowNull: true
@@ -75,7 +71,6 @@ class Product extends BaseCatalogModel {
     @HasMany(() => ProductIngredient, "productId")
     declare productIngredients: ProductIngredient[]
 
-    // Traducciones a idiomas distintos al español -- ver ProductTranslation.model.ts.
     @HasMany(() => ProductTranslation, "productId")
     declare translations: ProductTranslation[]
 }

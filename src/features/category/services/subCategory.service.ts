@@ -6,9 +6,7 @@ import { CreateSubCategoryInput, UpdateSubCategoryInput, SubCategoryTranslationI
 import { generateUniqueSlug } from "../../../shared/utils/slug.util"
 import { paginate, PaginatedResult, PaginationParams } from "../../../shared/utils/pagination.util"
 
-// Devuelve activas e inactivas -- es la lista que consume el admin (SubCategoryTable), que
-// necesita ver las subcategorías desactivadas para poder reactivarlas. Paginación opt-in -- ver
-// pagination.util.ts.
+
 async function listSubCategories(pagination?: PaginationParams, search?: string): Promise<PaginatedResult<SubCategory>> {
     const where: WhereOptions = search ? { displayName: { [Op.iLike]: `%${search}%` } } : {}
     return paginate(
@@ -27,7 +25,6 @@ async function getSubCategoryById(id: number): Promise<SubCategory> {
     return subCategory
 }
 
-// Mismo patrón que category.service.ts::syncEnglishTranslation -- ver ese comentario.
 async function syncEnglishTranslation(subCategoryId: number, en: SubCategoryTranslationInput | undefined): Promise<void> {
     if (!en?.displayName) return
     const [translation] = await SubCategoryTranslation.findOrCreate({
@@ -42,7 +39,6 @@ async function syncEnglishTranslation(subCategoryId: number, en: SubCategoryTran
 
 async function createSubCategory(input: CreateSubCategoryInput): Promise<SubCategory> {
     const { translations, ...rest } = input
-    // Unico por categoryId (no global): el mismo slug puede repetirse en categorias distintas.
     const urlSlug = await generateUniqueSlug(rest.displayName, async (candidate) => {
         const existing = await SubCategory.findOne({
             where: { categoryId: rest.categoryId, urlSlug: candidate },
@@ -67,8 +63,7 @@ async function deleteSubCategory(id: number): Promise<void> {
     await subCategory.update({ isActive: false })
 }
 
-// Ver el mismo patrón en product.service.ts::setProductStatus -- busca sin filtrar por isActive
-// para poder tanto desactivar como reactivar.
+
 async function setSubCategoryStatus(id: number, isActive: boolean): Promise<SubCategory> {
     const subCategory = await SubCategory.findOne({
         where: { id },

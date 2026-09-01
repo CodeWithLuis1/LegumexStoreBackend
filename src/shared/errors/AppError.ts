@@ -14,3 +14,18 @@ export class NotFoundError extends AppError {
         super(404, "errors.not_found", { resource, id })
     }
 }
+
+
+export interface RowIssue {
+    row: number
+    field: string
+    key: string
+    params?: Record<string, unknown>
+}
+
+
+export class BulkImportError extends AppError {
+    constructor(public readonly rowIssues: RowIssue[]) {
+        super(422, "errors.bulk_import_invalid_rows")
+    }
+}

@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -92,76 +92,58 @@
 <a name='L27'></a><a href='#L27'>27</a>
 <a name='L28'></a><a href='#L28'>28</a>
 <a name='L29'></a><a href='#L29'>29</a>
-<a name='L30'></a><a href='#L30'>30</a>
-<a name='L31'></a><a href='#L31'>31</a>
-<a name='L32'></a><a href='#L32'>32</a>
-<a name='L33'></a><a href='#L33'>33</a>
-<a name='L34'></a><a href='#L34'>34</a>
-<a name='L35'></a><a href='#L35'>35</a>
-<a name='L36'></a><a href='#L36'>36</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L30'></a><a href='#L30'>30</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import z from "zod"</span>
-<span class="cstat-no" title="statement not covered" >import { paginationQuerySchema } from "../../../shared/schemas/pagination.schema"</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import z from "zod"
+import { paginationQuerySchema } from "../../../shared/schemas/pagination.schema"
 &nbsp;
-const packagingRoleEnum = <span class="cstat-no" title="statement not covered" >z.enum(["unit", "pallet"])</span>
+const packagingRoleEnum = z.enum(["unit", "intermediate", "pallet"])
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" >createPackagingSchema = z.object({</span>
+export const createPackagingSchema = z.object({
     displayName: z.string().trim().min(1).max(80),
-    // Requerido: sin packagingRole el material queda invisible tanto para el selector de
-    // empaque unitario ("unit") como para el de materiales de palet ("pallet") -- una fila
-    // "huérfana" que nadie puede seleccionar a propósito.
     packagingRole: packagingRoleEnum,
     packagingMaterial: z.string().trim().max(80).optional(),
-    // Requerido: unitCost alimenta directo el costo de empaque unitario y de paletización en
-    // el cotizador. Si falta, esa línea de costo queda en 0 sin ningún aviso.
     unitCost: z.number().nonnegative(),
 })
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" >packagingIdParamSchema = z.object({</span>
+export const packagingIdParamSchema = z.object({
     id: z.string().regex(/^\d+$/),
 })
 &nbsp;
-// .partial() salvo packagingRole/unitCost -- ver comentario arriba de por qué no pueden
-// quedar vacíos ni siquiera al editar un registro existente.
-export const <span class="cstat-no" title="statement not covered" >updatePackagingSchema = createPackagingSchema.partial().extend({</span>
+&nbsp;
+export const updatePackagingSchema = createPackagingSchema.partial().extend({
     packagingRole: createPackagingSchema.shape.packagingRole,
     unitCost: createPackagingSchema.shape.unitCost,
 })
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" >packagingQuerySchema = paginationQuerySchema.extend({</span>
+export const packagingQuerySchema = paginationQuerySchema.extend({
     search: z.string().trim().optional(),
 })
 &nbsp;
@@ -175,7 +157,7 @@ export type PackagingQuery = z.infer&lt;typeof packagingQuerySchema&gt;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-20T16:12:20.293Z
+                at 2026-09-01T20:49:48.552Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

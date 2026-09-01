@@ -89,6 +89,49 @@ describe("productIngredientService.createProductIngredient", () => {
     })
 })
 
+describe("productIngredientService.createProductIngredient -- producto orgánico (Product.isOrganic)", () => {
+    beforeEach(() => {
+        mockProductFindOne.mockResolvedValue({ isOrganic: true, isCustomizable: false })
+    })
+
+    it("rechaza un ingrediente convencional (isOrganic=false, ingredientType='fruit') en un producto orgánico", async () => {
+        mockIngredientFindOne.mockResolvedValue({ isMixable: true, isOrganic: false, ingredientType: "fruit" })
+
+        await expect(
+            productIngredientService.createProductIngredient({ productId: 1, ingredientId: 9, quantityValue: 0.5 } as never)
+        ).rejects.toMatchObject({ statusCode: 422, key: "errors.ingredient_not_organic_compatible" })
+        expect(mockCreate).not.toHaveBeenCalled()
+    })
+
+    it("acepta la variante orgánica de un ingrediente (isOrganic=true)", async () => {
+        mockIngredientFindOne.mockResolvedValue({ isMixable: true, isOrganic: true, ingredientType: "fruit" })
+        mockCreate.mockResolvedValue({ id: 1 })
+
+        await productIngredientService.createProductIngredient({ productId: 1, ingredientId: 9, quantityValue: 0.5 } as never)
+
+        expect(mockCreate).toHaveBeenCalledTimes(1)
+    })
+
+    it("acepta un insumo tipo 'other' (agua, sal, azúcar...) aunque no esté marcado orgánico -- no tiene variante orgánica/convencional", async () => {
+        mockIngredientFindOne.mockResolvedValue({ isMixable: true, isOrganic: false, ingredientType: "other" })
+        mockCreate.mockResolvedValue({ id: 1 })
+
+        await productIngredientService.createProductIngredient({ productId: 1, ingredientId: 9, quantityValue: 0.5 } as never)
+
+        expect(mockCreate).toHaveBeenCalledTimes(1)
+    })
+
+    it("no exige nada de esto si el producto NO es orgánico", async () => {
+        mockProductFindOne.mockResolvedValue({ isOrganic: false, isCustomizable: false })
+        mockCreate.mockResolvedValue({ id: 1 })
+
+        await productIngredientService.createProductIngredient({ productId: 1, ingredientId: 9, quantityValue: 0.5 } as never)
+
+        expect(mockIngredientFindOne).not.toHaveBeenCalled()
+        expect(mockCreate).toHaveBeenCalledTimes(1)
+    })
+})
+
 describe("productIngredientService.updateProductIngredient", () => {
     it("re-valida quantityValue contra el producto EFECTIVO (el nuevo productId del input, no el viejo) al editar", async () => {
         const existing = {

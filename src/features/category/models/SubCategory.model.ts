@@ -45,7 +45,6 @@ class SubCategory extends BaseCatalogModel {
     @HasMany(() => Product, "subCategoryId")
     declare childProducts: Product[]
 
-    // Traducciones a idiomas distintos al español -- ver SubCategoryTranslation.model.ts.
     @HasMany(() => SubCategoryTranslation, "subCategoryId")
     declare translations: SubCategoryTranslation[]
 }

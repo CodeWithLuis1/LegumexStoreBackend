@@ -14,9 +14,7 @@ async function getProductIngredientById(id: number): Promise<ProductIngredient> 
     return productIngredient
 }
 
-// No confiar solo en que el frontend filtró el <select> -- si el producto es customizable,
-// el ingrediente elegido debe estar marcado como mezclable (Ingredient.isMixable). Ver
-// también el filtro de UI en ingredientSelect.component.tsx (onlyMixable).
+
 async function assertIngredientIsMixableIfNeeded(productId: number, ingredientId: number): Promise<void> {
     const product = await Product.findOne({ where: { id: productId } })
     if (!product?.isCustomizable) return
@@ -27,10 +25,17 @@ async function assertIngredientIsMixableIfNeeded(productId: number, ingredientId
     }
 }
 
-// quantityValue solo es opcional en el schema porque en productos customizables no se usa
-// (se usa minPercentage/maxPercentage en su lugar). Cuando el producto padre NO es
-// customizable, esta fila ES la receta fija que quote.service.ts multiplica directo -- si
-// queda vacía o en 0, esa materia prima "cuesta" $0 en cada cotización sin ningún aviso.
+
+async function assertIngredientIsOrganicCompatibleIfNeeded(productId: number, ingredientId: number): Promise<void> {
+    const product = await Product.findOne({ where: { id: productId } })
+    if (!product?.isOrganic) return
+
+    const ingredient = await Ingredient.findOne({ where: { id: ingredientId } })
+    if (!ingredient?.isOrganic && ingredient?.ingredientType !== "other") {
+        throw new AppError(422, "errors.ingredient_not_organic_compatible", { ingredientId })
+    }
+}
+
 async function assertQuantityValueIfFixedRecipe(productId: number, quantityValue: number | null | undefined): Promise<void> {
     const product = await Product.findOne({ where: { id: productId } })
     if (product?.isCustomizable) return
@@ -42,6 +47,7 @@ async function assertQuantityValueIfFixedRecipe(productId: number, quantityValue
 
 async function createProductIngredient(input: CreateProductIngredientInput): Promise<ProductIngredient> {
     await assertIngredientIsMixableIfNeeded(input.productId, input.ingredientId)
+    await assertIngredientIsOrganicCompatibleIfNeeded(input.productId, input.ingredientId)
     await assertQuantityValueIfFixedRecipe(input.productId, input.quantityValue)
     return ProductIngredient.create(input)
 }
@@ -51,7 +57,9 @@ async function updateProductIngredient(id: number, input: UpdateProductIngredien
     const effectiveProductId = input.productId ?? productIngredient.productId
     if (input.ingredientId !== undefined) {
         await assertIngredientIsMixableIfNeeded(effectiveProductId, input.ingredientId)
+        await assertIngredientIsOrganicCompatibleIfNeeded(effectiveProductId, input.ingredientId)
     }
+
     const effectiveQuantityValue = input.quantityValue !== undefined ? input.quantityValue : productIngredient.quantityValue
     await assertQuantityValueIfFixedRecipe(effectiveProductId, effectiveQuantityValue)
     return productIngredient.update(input)

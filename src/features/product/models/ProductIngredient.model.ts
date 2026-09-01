@@ -41,9 +41,6 @@ class ProductIngredient extends BaseCatalogModel {
     })
     declare quantityUnitId: number
 
-    // Solo aplican cuando el producto padre es customizable: acotan el % que el
-    // cliente puede pedir de este ingrediente en el mix (ver quoteService).
-    // null = sin límite (0-100 libre).
     @Column({
         type: DataType.DECIMAL(5, 2),
         allowNull: true

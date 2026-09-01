@@ -3,14 +3,6 @@ import Customer from "../../customer/models/Customer.model";
 import ProductVariant from "../../product/models/ProductVariant.model";
 import Destination from "../../destination/models/Destination.model";
 
-// Cotización guardada por el cliente. A diferencia del catálogo (Ingredient, Packaging, etc.)
-// esto es un registro histórico, no un maestro editable: por eso NO extiende BaseCatalogModel
-// (no tiene isActive, nunca se "desactiva", solo existe o no existe).
-//
-// Decisión de negocio (ver memoria del proyecto): los costos NO se versionan con tablas de
-// historial -- el desglose completo se congela en `breakdown` (JSONB) al momento de guardar,
-// así que si el catálogo cambia después, esta cotización no cambia. Las columnas sueltas
-// (totalCost, requestedPallets, etc.) son para poder listar/ordenar sin tener que leer el JSON.
 @Table({
     tableName: "quotes"
 })
@@ -61,38 +53,42 @@ class Quote extends Model {
     declare totalUnits: number
 
     @Column({
-        type: DataType.DECIMAL(12, 2),
+        type: DataType.DECIMAL(12, 4),
         allowNull: false
     })
     declare rawMaterialCost: number
 
     @Column({
-        type: DataType.DECIMAL(12, 2),
+        type: DataType.DECIMAL(12, 4),
         allowNull: false
     })
     declare unitPackagingCost: number
 
     @Column({
-        type: DataType.DECIMAL(12, 2),
+        type: DataType.DECIMAL(12, 4),
+        allowNull: false,
+        defaultValue: 0
+    })
+    declare intermediatePackagingCost: number
+
+    @Column({
+        type: DataType.DECIMAL(12, 4),
         allowNull: false
     })
     declare palletMaterialCost: number
 
     @Column({
-        type: DataType.DECIMAL(12, 2),
+        type: DataType.DECIMAL(12, 4),
         allowNull: false
     })
     declare transportCost: number
 
     @Column({
-        type: DataType.DECIMAL(12, 2),
+        type: DataType.DECIMAL(12, 4),
         allowNull: false
     })
     declare totalCost: number
 
-    // Snapshot completo del desglose (rawMaterials/unitPackaging/palletMaterials/transport),
-    // mismo shape que QuoteCalculation.breakdown -- así el detalle se puede repintar con
-    // QuoteResultCard sin volver a calcular nada.
     @Column({
         type: DataType.JSONB,
         allowNull: false

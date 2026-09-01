@@ -1,7 +1,6 @@
 import { Table, Column, DataType, ForeignKey, BelongsTo, Model } from "sequelize-typescript";
 import SubCategory from "./SubCategory.model";
 
-// Mismo patrón que CategoryTranslation -- ver ese archivo y shared/utils/translation.util.ts.
 @Table({
     tableName: "subCategoryTranslations",
     indexes: [

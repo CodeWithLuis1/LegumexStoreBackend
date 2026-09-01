@@ -18,9 +18,6 @@ async function findActiveProduct(id: number): Promise<Product> {
     return product
 }
 
-// Devuelve activos e inactivos -- es la lista que consume el admin (ProductTable), que necesita
-// ver los productos desactivados para poder reactivarlos. Paginación opt-in -- ver
-// pagination.util.ts.
 async function listProducts(pagination?: PaginationParams, search?: string): Promise<PaginatedResult<Product>> {
     const where: WhereOptions = search ? { displayName: { [Op.iLike]: `%${search}%` } } : {}
     return paginate(
@@ -34,8 +31,7 @@ async function getProductById(id: number): Promise<Product> {
     return findActiveProduct(id)
 }
 
-// Mismo patrón que category.service.ts::syncEnglishTranslation -- ver ese comentario. Product
-// solo tiene displayName (no descripción), así que este helper es más chico.
+
 async function syncEnglishTranslation(productId: number, en: ProductTranslationInput | undefined): Promise<void> {
     if (!en?.displayName) return
     const [translation] = await ProductTranslation.findOrCreate({
@@ -71,9 +67,7 @@ async function deleteProduct(id: number): Promise<void> {
     await product.update({ isActive: false })
 }
 
-// A diferencia de findActiveProduct, busca sin filtrar por isActive: el toggle tiene que poder
-// encontrar el producto tanto para desactivarlo (estaba activo) como para reactivarlo (estaba
-// inactivo).
+
 async function setProductStatus(id: number, isActive: boolean): Promise<Product> {
     const product = await Product.findOne({
         where: { id },

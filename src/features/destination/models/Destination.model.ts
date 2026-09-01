@@ -12,16 +12,11 @@ class Destination extends BaseCatalogModel {
     declare displayName: string
 
     @Column({
-        type: DataType.DECIMAL(10, 2),
+        type: DataType.DECIMAL(10, 4),
         allowNull: false
     })
     declare baseCost: number
 
-    // País al que pertenece este destino: Guatemala ("GT") o Estados Unidos ("US"). El
-    // cotizador filtra los destinos disponibles según el país que elige el cliente -- cada país
-    // tiene su propio set de destinos, no se mezclan en un solo selector. defaultValue evita que
-    // el ALTER TABLE de sequelize.sync falle contra filas de destinos ya existentes (ver mismo
-    // patrón en Packaging.packagingRole).
     @Column({
         type: DataType.ENUM("GT", "US"),
         allowNull: false,
