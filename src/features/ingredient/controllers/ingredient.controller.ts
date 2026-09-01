@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express"
 import { ingredientService } from "../services/ingredient.service"
 import { IngredientQuery } from "../schemas/ingredient.schema"
+import { AppError } from "../../../shared/errors/AppError"
 
 async function index(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -57,10 +58,48 @@ async function destroy(req: Request, res: Response, next: NextFunction): Promise
     }
 }
 
+// Mismo patrón que packagingController.bulkImport/downloadTemplate -- ver ese archivo para el
+// razonamiento completo (por qué el tipo se valida acá y no con `fileFilter` de multer, etc.).
+const EXCEL_MIME_TYPES = new Set([
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+    "application/vnd.ms-excel", // .xls
+])
+
+async function bulkImport(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+        if (!req.file) {
+            throw new AppError(422, "errors.bulk_import_missing_file")
+        }
+        if (!EXCEL_MIME_TYPES.has(req.file.mimetype)) {
+            throw new AppError(422, "errors.bulk_import_invalid_file_type")
+        }
+        const ingredients = await ingredientService.bulkImportIngredients(req.file.buffer)
+        res.status(201).json({
+            message: req.t("success.bulk_imported", { count: ingredients.length }),
+            data: { created: ingredients.length }
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+async function downloadTemplate(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+        const buffer = await ingredientService.buildIngredientImportTemplate()
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        res.setHeader("Content-Disposition", "attachment; filename=\"plantilla-ingredientes.xlsx\"")
+        res.send(buffer)
+    } catch (error) {
+        next(error)
+    }
+}
+
 export const ingredientController = {
     index,
     show,
     store,
     update,
     destroy,
+    bulkImport,
+    downloadTemplate,
 }

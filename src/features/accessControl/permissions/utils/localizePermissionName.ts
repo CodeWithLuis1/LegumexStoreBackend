@@ -1,7 +1,7 @@
 import { Request } from "express"
 import Permission from "../models/permission.model"
 
-const KNOWN_ACTIONS = new Set(["view", "create", "edit", "delete"])
+const KNOWN_ACTIONS = new Set(["view", "create", "edit", "delete", "calculate"])
 
 // System permissions (seeded) only store a technical "resource:action" name — no human text —
 // so the app stays bilingual. The readable description is composed here at request time from

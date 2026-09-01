@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express"
 import { packagingService } from "../services/packaging.service"
 import { PackagingQuery } from "../schemas/packaging.schema"
+import { AppError } from "../../../shared/errors/AppError"
 
 async function index(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -57,10 +58,47 @@ async function destroy(req: Request, res: Response, next: NextFunction): Promise
     }
 }
 
+const EXCEL_MIME_TYPES = new Set([
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+    "application/vnd.ms-excel", // .xls
+])
+
+async function bulkImport(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+        if (!req.file) {
+            throw new AppError(422, "errors.bulk_import_missing_file")
+        }
+
+        if (!EXCEL_MIME_TYPES.has(req.file.mimetype)) {
+            throw new AppError(422, "errors.bulk_import_invalid_file_type")
+        }
+        const packagings = await packagingService.bulkImportPackagings(req.file.buffer)
+        res.status(201).json({
+            message: req.t("success.bulk_imported", { count: packagings.length }),
+            data: { created: packagings.length }
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+async function downloadTemplate(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+        const buffer = await packagingService.buildPackagingImportTemplate()
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        res.setHeader("Content-Disposition", "attachment; filename=\"plantilla-empaques.xlsx\"")
+        res.send(buffer)
+    } catch (error) {
+        next(error)
+    }
+}
+
 export const packagingController = {
     index,
     show,
     store,
     update,
     destroy,
+    bulkImport,
+    downloadTemplate,
 }

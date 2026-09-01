@@ -17,8 +17,7 @@ async function getUnitById(id: number): Promise<Unit> {
     return unit;
 }
 
-// displayName/unitType/baseFactor NUNCA vienen del body -- se resuelven del catálogo fijo a
-// partir de unitKey (el zod enum ya garantiza que existe, el "if" es solo defensivo).
+
 function resolveCatalogEntry(unitKey: string) {
     const catalogEntry = getUnitCatalogEntry(unitKey);
     if (!catalogEntry) throw new AppError(422, "errors.invalid_unit_key");

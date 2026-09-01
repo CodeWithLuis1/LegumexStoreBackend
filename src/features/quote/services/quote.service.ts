@@ -39,6 +39,16 @@ interface UnitPackagingLine {
     lineTotal: number
 }
 
+interface IntermediatePackagingLine {
+    packagingId: number
+    displayName: string
+    unitCost: number
+    unitsPerPackage: number
+    totalUnits: number
+    packagesNeeded: number
+    lineTotal: number
+}
+
 interface PalletMaterialLine {
     packagingId: number
     displayName: string
@@ -63,29 +73,63 @@ interface QuoteCalculation {
     totalUnits: number
     rawMaterialCost: number
     unitPackagingCost: number
+    intermediatePackagingCost: number
     palletMaterialCost: number
     transportCost: number
     totalCost: number
     breakdown: {
         rawMaterials: RawMaterialLine[]
         unitPackaging: UnitPackagingLine | null
+        intermediatePackaging: IntermediatePackagingLine | null
         palletMaterials: PalletMaterialLine[]
         transport: TransportLine
-        // Idioma en el que quedaron congelados los displayName de producto/ingrediente de este
-        // desglose (ver decisión de negocio en la memoria del proyecto: una cotización guardada
-        // nunca cambia de idioma después, igual que nunca cambian los costos). Packaging y
-        // Destination NO se traducen (fuera del alcance pedido), sus displayName siguen en
-        // español siempre.
         language: ContentLanguage
     }
 }
 
-// Cuánto tolerar de la suma de porcentajes por redondeo de UI (ej. 33.33 x3 = 99.99).
-// Cualquier desvío mayor a esto se rechaza: no hay "relleno" implícito, el % define el peso real.
+
 const MIX_PERCENTAGE_TOLERANCE = new Decimal(0.5)
 
-// Construye las líneas de materia prima de un producto customizable a partir del mix que
-// eligió el cliente. No confía en el front: revalida contra el pool y los límites del admin.
+function buildFixedRecipeRawMaterials(
+    productIngredients: ProductIngredient[],
+    totalUnits: number,
+    language: ContentLanguage
+): RawMaterialLine[] {
+    const totalUnitsDecimal = toDecimal(totalUnits)
+
+    return productIngredients.map(productIngredient => {
+        const ingredient = productIngredient.usedIngredient
+        const unitCost = toDecimal(ingredient?.costPerUnit ?? 0)
+        const rawQuantity = toDecimal(productIngredient.quantityValue ?? 0)
+        const quantityUnit = productIngredient.quantityUnit
+        const costUnit = ingredient?.costUnit
+
+        let quantityPerUnit = rawQuantity
+        if (quantityUnit && costUnit) {
+            if (quantityUnit.unitType !== costUnit.unitType) {
+                throw new AppError(422, "errors.product_ingredient_quantity_unit_type_mismatch", {
+                    ingredientId: productIngredient.ingredientId,
+                    quantityUnitType: quantityUnit.unitType,
+                    costUnitType: costUnit.unitType
+                })
+            }
+            quantityPerUnit = rawQuantity.times(toDecimal(quantityUnit.baseFactor)).dividedBy(toDecimal(costUnit.baseFactor))
+        }
+
+        const lineTotal = roundMoney(unitCost.times(quantityPerUnit).times(totalUnitsDecimal))
+
+        return {
+            ingredientId: productIngredient.ingredientId,
+            displayName: pickTranslatedName(ingredient?.displayName ?? "", ingredient?.translations, language),
+            unitCost: unitCost.toNumber(),
+            quantityPerUnit: quantityPerUnit.toDecimalPlaces(6).toNumber(),
+            totalUnits,
+            lineTotal
+        }
+    })
+}
+
+
 function buildCustomizableRawMaterials(
     pool: ProductIngredient[],
     mix: IngredientMixLineInput[] | undefined,
@@ -132,28 +176,17 @@ function buildCustomizableRawMaterials(
 
         const ingredient = poolEntry.usedIngredient
         const unitCost = toDecimal(ingredient?.costPerUnit ?? 0)
-        // netWeightGrams siempre está en gramos; se convierte a la unidad en la que está
-        // cotizado el ingrediente (costUnit) usando el baseFactor de esa unidad. costUnitId es
-        // opcional en el catálogo de Ingredient -- si falta, NO se asume baseFactor=1 (eso
-        // trataba los gramos crudos como si ya fueran la unidad de costeo, inflando el costo
-        // ~1000x cuando el ingrediente en realidad se cotiza por kg). Se rechaza explícito.
         if (!ingredient?.costUnit) {
             throw new AppError(422, "errors.ingredient_missing_cost_unit", { ingredientId: mixLine.ingredientId })
         }
-        // La conversión gramos -> unidad de costeo solo tiene sentido si esa unidad es de peso
-        // (g/kg/lb). Un costUnit de volumen o conteo (ej. "litro", "unidad") daría un número
-        // que parece válido pero no significa nada -- se está dividiendo peso entre algo que no
-        // es peso.
+ 
         if (ingredient.costUnit.unitType !== "weight") {
             throw new AppError(422, "errors.ingredient_cost_unit_type_mismatch", {
                 ingredientId: mixLine.ingredientId,
                 unitType: ingredient.costUnit.unitType
             })
         }
-        // Toda la cadena de multiplicaciones/divisiones (%, gramos, factor de conversión, costo,
-        // unidades) corre en decimal.js -- no en `number` nativo -- para no acumular el error de
-        // representación binaria de floats (ver money.util.ts). Solo se redondea a precisión de
-        // moneda (2 decimales) en el lineTotal final, nunca en los pasos intermedios.
+
         const costUnitBaseFactor = toDecimal(ingredient.costUnit.baseFactor)
         const gramsPerUnit = percentage.dividedBy(100).times(netWeight)
         const quantityPerUnitDecimal = gramsPerUnit.dividedBy(costUnitBaseFactor)
@@ -163,8 +196,6 @@ function buildCustomizableRawMaterials(
             ingredientId: mixLine.ingredientId,
             displayName: pickTranslatedName(ingredient?.displayName ?? "", ingredient?.translations, language),
             unitCost: unitCost.toNumber(),
-            // Cantidad física (kg/lb/etc. por unidad), no un monto -- se conserva a 6 decimales
-            // (misma precisión que Unit.baseFactor) en vez de cortarla a precisión de moneda.
             quantityPerUnit: quantityPerUnitDecimal.toDecimalPlaces(6).toNumber(),
             totalUnits,
             lineTotal
@@ -191,20 +222,24 @@ async function calculateQuote(input: CalculateQuoteInput, language: ContentLangu
                         as: "productIngredients",
                         where: { isActive: true },
                         required: false,
-                        include: [{
-                            model: Ingredient,
-                            as: "usedIngredient",
-                            include: [
-                                { model: Unit, as: "costUnit" },
-                                { model: IngredientTranslation, as: "translations" }
-                            ]
-                        }]
+                        include: [
+                            {
+                                model: Ingredient,
+                                as: "usedIngredient",
+                                include: [
+                                    { model: Unit, as: "costUnit" },
+                                    { model: IngredientTranslation, as: "translations" }
+                                ]
+                            },
+                            { model: Unit, as: "quantityUnit" }
+                        ]
                     },
                     { model: ProductTranslation, as: "translations" }
                 ]
             },
             { model: Presentation, as: "sizePresentation" },
             { model: Packaging, as: "usedPackaging" },
+            { model: Packaging, as: "usedIntermediatePackaging" },
             {
                 model: ProductVariantPalletMaterial,
                 as: "palletMaterials",
@@ -234,22 +269,7 @@ async function calculateQuote(input: CalculateQuoteInput, language: ContentLangu
               totalUnits,
               language
           )
-        : (variant.parentProduct?.productIngredients ?? []).map(productIngredient => {
-              const unitCost = toDecimal(productIngredient.usedIngredient?.costPerUnit ?? 0)
-              const quantityPerUnit = toDecimal(productIngredient.quantityValue ?? 0)
-              const lineTotal = roundMoney(unitCost.times(quantityPerUnit).times(totalUnits))
-              return {
-                  ingredientId: productIngredient.ingredientId,
-                  displayName: pickTranslatedName(productIngredient.usedIngredient?.displayName ?? "", productIngredient.usedIngredient?.translations, language),
-                  unitCost: unitCost.toNumber(),
-                  quantityPerUnit: quantityPerUnit.toNumber(),
-                  totalUnits,
-                  lineTotal
-              }
-          })
-    // Cada lineTotal ya viene redondeado a centavos (ver arriba) -- se suma en decimal.js para
-    // que este subtotal cuadre exacto con la suma "a mano" de las líneas que ve el cliente en
-    // el desglose, sin arrastrar el error de `Array.prototype.reduce` con `+` nativo.
+        : buildFixedRecipeRawMaterials(variant.parentProduct?.productIngredients ?? [], totalUnits, language)
     const rawMaterialCost = sumMoney(rawMaterials.map(line => line.lineTotal))
 
     const unitPackagingUnitCost = toDecimal(variant.usedPackaging?.unitCost ?? 0)
@@ -263,6 +283,26 @@ async function calculateQuote(input: CalculateQuoteInput, language: ContentLangu
           }
         : null
     const unitPackagingCost = unitPackaging?.lineTotal ?? 0
+
+    const intermediatePackaging: IntermediatePackagingLine | null = variant.usedIntermediatePackaging
+        ? (() => {
+              if (!variant.unitsPerIntermediatePackage || variant.unitsPerIntermediatePackage <= 0) {
+                  throw new AppError(422, "errors.intermediate_packaging_missing_units")
+              }
+              const unitCost = toDecimal(variant.usedIntermediatePackaging.unitCost ?? 0)
+              const packagesNeeded = Math.ceil(totalUnits / variant.unitsPerIntermediatePackage)
+              return {
+                  packagingId: variant.usedIntermediatePackaging.id,
+                  displayName: variant.usedIntermediatePackaging.displayName,
+                  unitCost: unitCost.toNumber(),
+                  unitsPerPackage: variant.unitsPerIntermediatePackage,
+                  totalUnits,
+                  packagesNeeded,
+                  lineTotal: roundMoney(unitCost.times(packagesNeeded))
+              }
+          })()
+        : null
+    const intermediatePackagingCost = intermediatePackaging?.lineTotal ?? 0
 
     const palletMaterials: PalletMaterialLine[] = (variant.palletMaterials ?? []).map(palletMaterial => {
         const unitCost = toDecimal(palletMaterial.usedPalletMaterial?.unitCost ?? 0)
@@ -286,11 +326,8 @@ async function calculateQuote(input: CalculateQuoteInput, language: ContentLangu
         baseCost: transportCost
     }
 
-    // Mismo principio: se suman los 4 subtotales YA redondeados, no floats crudos -- así
-    // totalCost siempre reconcilia exacto con rawMaterialCost + unitPackagingCost +
-    // palletMaterialCost + transportCost, tanto en las columnas DECIMAL(12,2) de Quote como en
-    // el breakdown JSONB (mismo valor en los dos lados, nunca un centavo de diferencia).
-    const totalCost = sumMoney([rawMaterialCost, unitPackagingCost, palletMaterialCost, transportCost])
+
+    const totalCost = sumMoney([rawMaterialCost, unitPackagingCost, intermediatePackagingCost, palletMaterialCost, transportCost])
 
     const variantLabelParts = [variant.sizePresentation?.displayLabel, variant.usedPackaging?.displayName].filter(Boolean)
 
@@ -303,12 +340,14 @@ async function calculateQuote(input: CalculateQuoteInput, language: ContentLangu
         totalUnits,
         rawMaterialCost,
         unitPackagingCost,
+        intermediatePackagingCost,
         palletMaterialCost,
         transportCost,
         totalCost,
         breakdown: {
             rawMaterials,
             unitPackaging,
+            intermediatePackaging,
             palletMaterials,
             transport,
             language
@@ -327,8 +366,6 @@ interface QuotableVariant {
 interface QuotableIngredientOption {
     ingredientId: number
     displayName: string
-    // El cliente necesita distinguir a simple vista la variante orgánica de la convencional
-    // al armar su mix — son filas de catálogo separadas con costos distintos.
     isOrganic: boolean
     minPercentage: number
     maxPercentage: number
@@ -340,12 +377,7 @@ interface QuotableProduct {
     isOrganic: boolean
     isCustomizable: boolean
     productTypeName: string | null
-    // Foto propia del producto (null si el admin todavía no le cargó una) -- se usa en el
-    // paso 2 (elegir producto) del selector visual del cotizador.
     imageUrl: string | null
-    // Datos mínimos de la categoría (no de la subcategoría, ver decisión en
-    // legumexstore-cotizador-pivot) para el paso 1 del mismo selector visual. SubCategory
-    // solo se usa acá como puente para llegar a Category, no se expone.
     categoryId: number
     categoryName: string
     categoryImageUrl: string | null
@@ -353,11 +385,7 @@ interface QuotableProduct {
     variants: QuotableVariant[]
 }
 
-// Only products with at least one active, pallet-configured variant can be quoted —
-// costing needs unitsPerPallet to turn "N pallets" into a raw-material/packaging total.
-// "language" resuelve displayName de producto/categoría/ingrediente al idioma activo del cliente
-// (Accept-Language, ver quote.controller.ts) -- productType/packaging quedan fuera del alcance
-// pedido, siguen siempre en español.
+
 async function listQuotableProducts(language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE): Promise<QuotableProduct[]> {
     const products = await Product.findAll({
         where: { isActive: true },
@@ -411,8 +439,6 @@ async function listQuotableProducts(language: ContentLanguage = DEFAULT_CONTENT_
             categoryId: category?.id ?? 0,
             categoryName: pickTranslatedName(category?.displayName ?? "", category?.translations, language),
             categoryImageUrl: category?.imageUrl ?? null,
-            // Solo tiene sentido mostrar el pool cuando el producto es customizable —
-            // en un producto terminado la receta es fija y no la elige el cliente.
             ingredientPool: plain.isCustomizable
                 ? (plain.productIngredients ?? []).map((productIngredient: ProductIngredient) => ({
                       ingredientId: productIngredient.ingredientId,
@@ -441,10 +467,7 @@ async function listQuoteDestinations(): Promise<Destination[]> {
     return Destination.findAll({ where: { isActive: true }, order: [["displayName", "ASC"]] })
 }
 
-// Único punto donde el cliente calcula una cotización: calcular y guardar son el mismo paso
-// (ya no hay botón de "guardar" aparte del lado cliente, ver quoteRouter). Nunca confía en el
-// desglose que pudiera venir del front (no se recibe ninguno): siempre recalcula desde cero con
-// calculateQuote y persiste ESE resultado como snapshot -- misma fuente de verdad para todos.
+
 async function saveQuote(customerId: number, input: CalculateQuoteInput, language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE): Promise<QuoteCalculation & { id: number; createdAt: Date }> {
     const calculation = await calculateQuote(input, language)
 
@@ -458,6 +481,7 @@ async function saveQuote(customerId: number, input: CalculateQuoteInput, languag
         totalUnits: calculation.totalUnits,
         rawMaterialCost: calculation.rawMaterialCost,
         unitPackagingCost: calculation.unitPackagingCost,
+        intermediatePackagingCost: calculation.intermediatePackagingCost,
         palletMaterialCost: calculation.palletMaterialCost,
         transportCost: calculation.transportCost,
         totalCost: calculation.totalCost,

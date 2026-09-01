@@ -9,11 +9,6 @@ import RolePermission from "../../features/accessControl/rolePermissions/models/
 const ADMIN_ROLE_NAME = "Administrador"
 const PASSWORD_SALT_ROUNDS = 10
 
-// Recursos reales del backend (feature-based): un permiso view/create/edit/delete por cada uno,
-// mas los propios del modulo de accesos.
-// No se guarda "description" en español/inglés aquí: la app es bilingüe y el texto humano se
-// resuelve en tiempo de request via i18next (ver permissions/utils/localizePermissionName.ts),
-// igual que "resources.*" en los locales. La DB solo guarda el nombre técnico (resource:action).
 const RESOURCE_KEYS = [
     "categories",
     "subCategories",
@@ -31,17 +26,9 @@ const RESOURCE_KEYS = [
 ]
 
 const ACTION_SUFFIXES = ["view", "create", "edit", "delete"] as const
-
-// Permisos que no siguen el patrón CRUD completo de arriba. `Quote` es un registro histórico
-// (no un catálogo editable, ver Quote.model.ts) -- el admin solo necesita poder VER todas las
-// cotizaciones que llegan, sin importar el cliente; no existe (ni debe existir) create/edit/delete
-// desde el admin, así que no se agrega "quotes" a RESOURCE_KEYS (eso generaría permisos huérfanos
-// que ningún endpoint usaría jamás).
 const EXTRA_PERMISSIONS = [
     { name: "quotes:view" },
-    // Igual que "quotes:view": el dashboard solo lee/agrega datos que ya existen en otras tablas,
-    // no es un catalogo editable -- no aplica create/edit/delete, así que no se agrega "dashboard"
-    // a RESOURCE_KEYS (generaría permisos huérfanos que ningún endpoint usaría jamás).
+    { name: "quotes:calculate" },
     { name: "dashboard:view" },
 ]
 

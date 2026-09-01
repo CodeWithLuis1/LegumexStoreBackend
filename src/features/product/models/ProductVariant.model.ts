@@ -30,6 +30,13 @@ class ProductVariant extends BaseCatalogModel {
     })
     declare packagingId: number
 
+    @ForeignKey(() => Packaging)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true
+    })
+    declare intermediatePackagingId: number
+
     @Column({
         type: DataType.STRING(60),
         allowNull: true,
@@ -43,15 +50,17 @@ class ProductVariant extends BaseCatalogModel {
     })
     declare unitsPerPallet: number
 
-    // Cuántas unidades (bolsas/piezas) entran en UNA caja. No participa en el cálculo de
-    // costo -- unitsPerPallet ya cubre eso -- es la referencia para no tener que calcular
-    // "cajas por palet" de memoria al cargar los materiales de paletización (ver
-    // productVariantPalletMaterialSection.component.tsx).
     @Column({
         type: DataType.INTEGER,
         allowNull: true
     })
     declare unitsPerBox: number
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true
+    })
+    declare unitsPerIntermediatePackage: number
 
     @BelongsTo(() => Product, "productId")
     declare parentProduct: Product
@@ -61,6 +70,9 @@ class ProductVariant extends BaseCatalogModel {
 
     @BelongsTo(() => Packaging, "packagingId")
     declare usedPackaging: Packaging
+
+    @BelongsTo(() => Packaging, "intermediatePackagingId")
+    declare usedIntermediatePackaging: Packaging
 
     @HasMany(() => ProductVariantPalletMaterial, "productVariantId")
     declare palletMaterials: ProductVariantPalletMaterial[]

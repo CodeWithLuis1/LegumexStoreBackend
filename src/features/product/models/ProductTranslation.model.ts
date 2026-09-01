@@ -1,8 +1,6 @@
 import { Table, Column, DataType, ForeignKey, BelongsTo, Model } from "sequelize-typescript";
 import Product from "./Product.model";
 
-// Mismo patrón que CategoryTranslation -- ver shared/utils/translation.util.ts. Product no tiene
-// descripción larga hoy (solo displayName), así que esta tabla no lleva fullDescription.
 @Table({
     tableName: "productTranslations",
     indexes: [

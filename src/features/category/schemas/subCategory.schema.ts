@@ -1,7 +1,6 @@
 import { z } from "zod"
 import { paginationQuerySchema } from "../../../shared/schemas/pagination.schema"
 
-// Mismo contrato que category.schema.ts -- ver comentario ahí y shared/utils/translation.util.ts.
 const subCategoryTranslationInputSchema = z.object({
     displayName: z.string().trim().min(1).max(80).optional(),
     fullDescription: z.string().trim().nullable().optional(),
@@ -20,7 +19,6 @@ export const subCategoryIdParamSchema = z.object({
     id: z.string().regex(/^\d+$/),
 })
 
-// Body de PATCH /:id/status -- ver el mismo campo en product.schema.ts.
 export const updateSubCategoryStatusSchema = z.object({
     isActive: z.boolean(),
 })

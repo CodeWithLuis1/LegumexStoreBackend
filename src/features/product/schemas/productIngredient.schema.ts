@@ -5,8 +5,6 @@ const productIngredientShape = {
     ingredientId: z.number().int().positive(),
     quantityValue: z.number().optional(),
     quantityUnitId: z.number().int().positive().optional(),
-    // Solo tienen sentido cuando el producto padre es customizable (ver Product.isCustomizable):
-    // acotan el % que el cliente puede elegir de este ingrediente en el mix de la cotización.
     minPercentage: z.number().min(0).max(100).optional(),
     maxPercentage: z.number().min(0).max(100).optional(),
     displayOrder: z.number().int().optional(),

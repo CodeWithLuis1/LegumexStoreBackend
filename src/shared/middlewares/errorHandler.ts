@@ -1,9 +1,30 @@
 import { Request, Response, NextFunction } from "express"
 import { ValidationError as SequelizeValidationError, UniqueConstraintError } from "sequelize"
 import { ZodError } from "zod"
-import { AppError } from "../errors/AppError"
+import { MulterError } from "multer"
+import { AppError, BulkImportError } from "../errors/AppError"
 
 export function errorHandler(error: unknown, req: Request, res: Response, _next: NextFunction): void {
+
+    if (error instanceof MulterError) {
+        const key = error.code === "LIMIT_FILE_SIZE" ? "errors.bulk_import_file_too_large" : "errors.bulk_import_upload_error"
+        res.status(422).json({ message: req.t(key) })
+        return
+    }
+
+
+    if (error instanceof BulkImportError) {
+        res.status(error.statusCode).json({
+            message: req.t(error.key),
+            details: error.rowIssues.map(issue => ({
+                row: issue.row,
+                field: issue.field,
+                message: req.t(issue.key, issue.params)
+            }))
+        })
+        return
+    }
+
     if (error instanceof AppError) {
         const resource = error.params?.resource
         const params = resource

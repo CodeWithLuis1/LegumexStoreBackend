@@ -7,9 +7,6 @@ import { paginate, PaginatedResult, PaginationParams } from "../../../../shared/
 
 const PASSWORD_SALT_ROUNDS = 10
 
-// Devuelve activos e inactivos -- es la lista que consume el admin (UserTable), que necesita ver
-// los usuarios desactivados para poder reactivarlos (ver mismo patrón en category.service.ts /
-// product.service.ts::listCategories/listProducts).
 async function listUsers(pagination?: PaginationParams, search?: string): Promise<PaginatedResult<User>> {
     const where: WhereOptions = search
         ? { [Op.or]: [{ name: { [Op.iLike]: `%${search}%` } }, { username: { [Op.iLike]: `%${search}%` } }] }
@@ -51,9 +48,7 @@ async function deleteUser(id: number): Promise<void> {
     await user.update({ isActive: false })
 }
 
-// Ver el mismo patrón en category.service.ts::setCategoryStatus / product.service.ts::setProductStatus
-// -- busca sin filtrar por isActive para poder tanto desactivar como reactivar (getUserById no
-// sirve acá porque filtra isActive:true, y dejaría inalcanzable a un usuario ya desactivado).
+
 async function setUserStatus(id: number, isActive: boolean): Promise<User> {
     const user = await User.findOne({ where: { id }, attributes: { exclude: ["password"] } })
     if (!user) throw new NotFoundError("User", id)

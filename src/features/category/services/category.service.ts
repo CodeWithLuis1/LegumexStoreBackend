@@ -9,10 +9,6 @@ import { paginate, PaginatedResult, PaginationParams } from "../../../shared/uti
 
 const IMAGE_FOLDER = "categories"
 
-// Devuelve activas e inactivas -- es la lista que consume el admin (CategoryTable), que necesita
-// ver las categorías desactivadas para poder reactivarlas. Paginación opt-in: ver pagination.util.ts
-// -- sin "page" se comporta igual que antes (findAll completo), así CategorySelect sigue trayendo
-// todas las categorías sin cambios.
 async function listCategories(pagination?: PaginationParams, search?: string): Promise<PaginatedResult<Category>> {
     const where: WhereOptions = search ? { displayName: { [Op.iLike]: `%${search}%` } } : {}
     return paginate(
@@ -31,10 +27,6 @@ async function getCategoryById(id: number): Promise<Category> {
     return category
 }
 
-// Crea o actualiza la fila de traducción en inglés según lo que venga en el body. Mismo espíritu
-// que el manejo de "image" en este service: bloque "en" ausente o sin displayName = no se toca
-// nada (no hay forma de borrar la traducción una vez creada -- no hacía falta, ver memoria del
-// proyecto sobre por qué acá se prefiere lo mínimo necesario antes que una feature completa).
 async function syncEnglishTranslation(categoryId: number, en: CategoryTranslationInput | undefined): Promise<void> {
     if (!en?.displayName) return
     const [translation] = await CategoryTranslation.findOrCreate({
@@ -73,8 +65,6 @@ async function deleteCategory(id: number): Promise<void> {
     await category.update({ isActive: false })
 }
 
-// Ver el mismo patrón en product.service.ts::setProductStatus -- busca sin filtrar por isActive
-// para poder tanto desactivar como reactivar.
 async function setCategoryStatus(id: number, isActive: boolean): Promise<Category> {
     const category = await Category.findOne({
         where: { id },

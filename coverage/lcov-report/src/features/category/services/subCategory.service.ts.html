@@ -147,20 +147,13 @@
 <a name='L82'></a><a href='#L82'>82</a>
 <a name='L83'></a><a href='#L83'>83</a>
 <a name='L84'></a><a href='#L84'>84</a>
-<a name='L85'></a><a href='#L85'>85</a>
-<a name='L86'></a><a href='#L86'>86</a>
-<a name='L87'></a><a href='#L87'>87</a>
-<a name='L88'></a><a href='#L88'>88</a>
-<a name='L89'></a><a href='#L89'>89</a>
-<a name='L90'></a><a href='#L90'>90</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L85'></a><a href='#L85'>85</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -182,7 +175,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -196,7 +188,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -219,7 +210,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -249,9 +239,7 @@ import { CreateSubCategoryInput, UpdateSubCategoryInput, SubCategoryTranslationI
 <span class="cstat-no" title="statement not covered" >import { generateUniqueSlug } from "../../../shared/utils/slug.util"</span>
 <span class="cstat-no" title="statement not covered" >import { paginate, PaginatedResult, PaginationParams } from "../../../shared/utils/pagination.util"</span>
 &nbsp;
-// Devuelve activas e inactivas -- es la lista que consume el admin (SubCategoryTable), que
-// necesita ver las subcategorías desactivadas para poder reactivarlas. Paginación opt-in -- ver
-// pagination.util.ts.
+&nbsp;
 async function <span class="fstat-no" title="function not covered" >listSubCategories(</span>pagination?: PaginationParams, search?: string): Promise&lt;PaginatedResult&lt;SubCategory&gt;&gt; {
     const where: WhereOptions = <span class="cstat-no" title="statement not covered" >search ? { displayName: { [Op.iLike]: `%${search}%` } } : {}</span>
 <span class="cstat-no" title="statement not covered" >    return paginate(</span>
@@ -270,7 +258,6 @@ async function <span class="fstat-no" title="function not covered" >getSubCatego
 <span class="cstat-no" title="statement not covered" >    return subCategory</span>
 }
 &nbsp;
-// Mismo patrón que category.service.ts::syncEnglishTranslation -- ver ese comentario.
 async function <span class="fstat-no" title="function not covered" >syncEnglishTranslation(</span>subCategoryId: number, en: SubCategoryTranslationInput | undefined): Promise&lt;void&gt; {
 <span class="cstat-no" title="statement not covered" >    if (!en?.displayName) <span class="cstat-no" title="statement not covered" >return</span></span>
     const [translation] = <span class="cstat-no" title="statement not covered" >await SubCategoryTranslation.findOrCreate({</span>
@@ -285,7 +272,6 @@ async function <span class="fstat-no" title="function not covered" >syncEnglishT
 &nbsp;
 async function <span class="fstat-no" title="function not covered" >createSubCategory(</span>input: CreateSubCategoryInput): Promise&lt;SubCategory&gt; {
     const { translations, ...rest } = <span class="cstat-no" title="statement not covered" >input</span>
-    // Unico por categoryId (no global): el mismo slug puede repetirse en categorias distintas.
     const urlSlug = <span class="cstat-no" title="statement not covered" >await generateUniqueSlug(rest.displayName, <span class="fstat-no" title="function not covered" >async </span>(candidate) =&gt; {</span>
         const existing = <span class="cstat-no" title="statement not covered" >await SubCategory.findOne({</span>
             where: { categoryId: rest.categoryId, urlSlug: candidate },
@@ -310,8 +296,7 @@ async function <span class="fstat-no" title="function not covered" >deleteSubCat
 <span class="cstat-no" title="statement not covered" >    await subCategory.update({ isActive: false })</span>
 }
 &nbsp;
-// Ver el mismo patrón en product.service.ts::setProductStatus -- busca sin filtrar por isActive
-// para poder tanto desactivar como reactivar.
+&nbsp;
 async function <span class="fstat-no" title="function not covered" >setSubCategoryStatus(</span>id: number, isActive: boolean): Promise&lt;SubCategory&gt; {
     const subCategory = <span class="cstat-no" title="statement not covered" >await SubCategory.findOne({</span>
         where: { id },
@@ -337,7 +322,7 @@ export const <span class="cstat-no" title="statement not covered" >subCategorySe
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-20T16:12:20.293Z
+                at 2026-09-01T20:49:48.552Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

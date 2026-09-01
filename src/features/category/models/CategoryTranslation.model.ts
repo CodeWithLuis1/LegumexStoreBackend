@@ -1,9 +1,6 @@
 import { Table, Column, DataType, ForeignKey, BelongsTo, Model } from "sequelize-typescript";
 import Category from "./Category.model";
 
-// Solo guarda idiomas DISTINTOS al español -- ver shared/utils/translation.util.ts para el
-// porqué. "language" es STRING (no ENUM) a propósito: agregar un idioma nuevo el día de mañana
-// es una fila nueva, no una migración de tipo de columna.
 @Table({
     tableName: "categoryTranslations",
     indexes: [

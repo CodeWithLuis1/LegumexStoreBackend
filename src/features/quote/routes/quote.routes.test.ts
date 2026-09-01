@@ -14,12 +14,20 @@ jest.mock("../services/quote.service", () => ({
         listAllQuotes: jest.fn(),
     }
 }))
+jest.mock("../../../shared/services/email.service", () => ({
+    emailService: { sendMailWithAttachment: jest.fn() }
+}))
+jest.mock("../../../shared/services/exchangeRate.service", () => ({
+    getUsdToGtqRate: jest.fn()
+}))
 
 import request from "supertest"
 import jwt from "jsonwebtoken"
 import { buildTestApp } from "../../../shared/test-utils/testApp"
 import quoteRouter from "./quote.routes"
 import { quoteService } from "../services/quote.service"
+import { emailService } from "../../../shared/services/email.service"
+import { getUsdToGtqRate } from "../../../shared/services/exchangeRate.service"
 import { AppError } from "../../../shared/errors/AppError"
 
 const app = buildTestApp("/api/quotes", quoteRouter)
@@ -106,6 +114,108 @@ describe("quoteRouter (HTTP)", () => {
             expect(res.status).toBe(500)
             expect(JSON.stringify(res.body)).not.toContain("10.0.4.2")
             consoleErrorSpy.mockRestore()
+        })
+    })
+
+    describe("GET /exchange-rate", () => {
+        it("200 con el tipo de cambio que devuelve el service, para un token de cliente válido", async () => {
+            (getUsdToGtqRate as jest.Mock).mockResolvedValue(7.8)
+
+            const res = await request(app).get("/api/quotes/exchange-rate").set("Authorization", `Bearer ${customerToken}`)
+
+            expect(res.status).toBe(200)
+            expect(res.body).toEqual({ data: { rate: 7.8 } })
+        })
+
+        it("rechaza sin token de cliente, igual que el resto de rutas de quoteRouter", async () => {
+            const res = await request(app).get("/api/quotes/exchange-rate")
+            expect(res.status).toBe(401)
+        })
+
+        it("503 con mensaje claro si Banguat falla y no hay cache (nunca 500 genérico)", async () => {
+            (getUsdToGtqRate as jest.Mock).mockRejectedValue(new Error("timeout"))
+
+            const res = await request(app).get("/api/quotes/exchange-rate").set("Authorization", `Bearer ${customerToken}`)
+
+            expect(res.status).toBe(503)
+            expect(res.body.message).toBe("No se pudo obtener el tipo de cambio en este momento. Intenta de nuevo más tarde.")
+        })
+    })
+
+    describe("POST /send-email (adjuntar y enviar el PDF ya generado por el front)", () => {
+        it("422 si no viene ningún archivo adjunto", async () => {
+            const res = await request(app)
+                .post("/api/quotes/send-email")
+                .set("Authorization", `Bearer ${customerToken}`)
+                .field("to", "cliente@empresa.com")
+                .field("subject", "Cotización")
+                .field("body", "Hola, adjunto la cotización.")
+
+            expect(res.status).toBe(422)
+            expect(emailService.sendMailWithAttachment).not.toHaveBeenCalled()
+        })
+
+        it("422 si el archivo adjunto no es un PDF", async () => {
+            const res = await request(app)
+                .post("/api/quotes/send-email")
+                .set("Authorization", `Bearer ${customerToken}`)
+                .field("to", "cliente@empresa.com")
+                .field("subject", "Cotización")
+                .field("body", "Hola")
+                .attach("file", Buffer.from("no soy un pdf"), { filename: "cotizacion.txt", contentType: "text/plain" })
+
+            expect(res.status).toBe(422)
+            expect(emailService.sendMailWithAttachment).not.toHaveBeenCalled()
+        })
+
+        it("400 si el email del destinatario no es válido -- nunca llega a intentar el envío", async () => {
+            const res = await request(app)
+                .post("/api/quotes/send-email")
+                .set("Authorization", `Bearer ${customerToken}`)
+                .field("to", "no-es-un-email")
+                .field("subject", "Cotización")
+                .field("body", "Hola")
+                .attach("file", Buffer.from("%PDF-1.4"), { filename: "cotizacion.pdf", contentType: "application/pdf" })
+
+            expect(res.status).toBe(400)
+            expect(emailService.sendMailWithAttachment).not.toHaveBeenCalled()
+        })
+
+        it("200 y reenvía el PDF adjunto con los datos exactos del multipart -- caso feliz", async () => {
+            (emailService.sendMailWithAttachment as jest.Mock).mockResolvedValue(undefined)
+            const pdfContent = Buffer.from("%PDF-1.4 contenido de prueba")
+
+            const res = await request(app)
+                .post("/api/quotes/send-email")
+                .set("Authorization", `Bearer ${customerToken}`)
+                .field("to", "cliente@empresa.com")
+                .field("subject", "Cotización para Cliente Uno")
+                .field("body", "Hola, adjunto la cotización.")
+                .attach("file", pdfContent, { filename: "cotizacion.pdf", contentType: "application/pdf" })
+
+            expect(res.status).toBe(200)
+            expect(emailService.sendMailWithAttachment).toHaveBeenCalledWith({
+                to: "cliente@empresa.com",
+                subject: "Cotización para Cliente Uno",
+                textBody: "Hola, adjunto la cotización.",
+                attachment: {
+                    buffer: pdfContent,
+                    fileName: "cotizacion.pdf",
+                    contentType: "application/pdf"
+                }
+            })
+        })
+
+        it("rechaza sin token de cliente, igual que el resto de rutas de quoteRouter", async () => {
+            const res = await request(app)
+                .post("/api/quotes/send-email")
+                .field("to", "cliente@empresa.com")
+                .field("subject", "Cotización")
+                .field("body", "Hola")
+                .attach("file", Buffer.from("%PDF-1.4"), { filename: "cotizacion.pdf", contentType: "application/pdf" })
+
+            expect(res.status).toBe(401)
+            expect(emailService.sendMailWithAttachment).not.toHaveBeenCalled()
         })
     })
 })

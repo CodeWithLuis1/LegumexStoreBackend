@@ -26,9 +26,6 @@ class Category extends BaseCatalogModel {
         allowNull: true
     })
     declare fullDescription: string
-
-    // URL pública en S3 (o null si la categoría todavía no tiene foto). Mismo manejo que
-    // Product.imageUrl -- ver category.service.ts.
     @Column({
         type: DataType.STRING(500),
         allowNull: true
@@ -41,7 +38,6 @@ class Category extends BaseCatalogModel {
     @HasMany(() => Presentation, "categoryId")
     declare linkedPresentations: Presentation[]
 
-    // Traducciones a idiomas distintos al español -- ver CategoryTranslation.model.ts.
     @HasMany(() => CategoryTranslation, "categoryId")
     declare translations: CategoryTranslation[]
 }

@@ -14,7 +14,7 @@ class Packaging extends BaseCatalogModel {
     declare displayName: string
 
     @Column({
-        type: DataType.ENUM("unit", "pallet"),
+        type: DataType.ENUM("unit", "intermediate", "pallet"),
         allowNull: false,
         defaultValue: "unit"
     })
@@ -25,15 +25,17 @@ class Packaging extends BaseCatalogModel {
         allowNull: true
     })
     declare packagingMaterial: string
-
     @Column({
-        type: DataType.DECIMAL(10, 2),
+        type: DataType.DECIMAL(10, 4),
         allowNull: true
     })
     declare unitCost: number
 
     @HasMany(() => ProductVariant, "packagingId")
     declare packagedVariants: ProductVariant[]
+
+    @HasMany(() => ProductVariant, "intermediatePackagingId")
+    declare intermediatePackagingUsages: ProductVariant[]
 
     @HasMany(() => ProductVariantPalletMaterial, "packagingId")
     declare palletMaterialUsages: ProductVariantPalletMaterial[]

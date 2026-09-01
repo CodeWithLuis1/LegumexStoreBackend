@@ -192,6 +192,47 @@ describe("dashboardService.getSummary", () => {
         ])
     })
 
+    it("suma dinero sin arrastrar ruido de floats nativos (bug real: 0.1 + 0.2 + 0.0001 da 0.30010000000000003 con `+` nativo)", async () => {
+        // Reproduce con datos reales de dashboard el mismo caso que money.util.test.ts prueba de
+        // forma aislada. dashboard.service.ts NO pasa por money.util.ts (a diferencia de
+        // quote.service.ts) -- suma con `Number(...) + ` nativo en varios lugares
+        // (buildOverview, buildTrend, groupProductsByRealId, buildTopCustomers,
+        // buildTopIngredients). Con montos de dinero reales esto puede filtrar un float sin
+        // redondear (ej. 0.30010000000000003) directo en el JSON de /admin/dashboard/summary,
+        // en vez del monto exacto.
+        mockQuoteFindAll.mockResolvedValue([
+            stubQuote({
+                customerId: 1,
+                totalCost: 0.1,
+                quotingCustomer: { id: 1, name: "Cliente A", companyName: null, email: "a@a.com" },
+                quotedVariant: { id: 50, parentProduct: { id: 5 } },
+                breakdown: { rawMaterials: [{ ingredientId: 1, displayName: "Piña", lineTotal: 0.1 }] }
+            }),
+            stubQuote({
+                customerId: 1,
+                totalCost: 0.2,
+                quotingCustomer: { id: 1, name: "Cliente A", companyName: null, email: "a@a.com" },
+                quotedVariant: { id: 50, parentProduct: { id: 5 } },
+                breakdown: { rawMaterials: [{ ingredientId: 1, displayName: "Piña", lineTotal: 0.2 }] }
+            }),
+            stubQuote({
+                customerId: 1,
+                totalCost: 0.0001,
+                quotingCustomer: { id: 1, name: "Cliente A", companyName: null, email: "a@a.com" },
+                quotedVariant: { id: 50, parentProduct: { id: 5 } },
+                breakdown: { rawMaterials: [{ ingredientId: 1, displayName: "Piña", lineTotal: 0.0001 }] }
+            })
+        ])
+
+        const summary = await dashboardService.getSummary()
+
+        expect(summary.overview.totalRevenue).toBe(0.3001)
+        expect(summary.topProducts[0].totalRevenue).toBe(0.3001)
+        expect(summary.topProductsByRevenue[0].totalRevenue).toBe(0.3001)
+        expect(summary.topCustomers[0].totalRevenue).toBe(0.3001)
+        expect(summary.topIngredients[0].totalCost).toBe(0.3001)
+    })
+
     it("agrupa la tendencia por día cuando el rango es corto", async () => {
         mockQuoteFindAll.mockResolvedValue([
             stubQuote({ createdAt: "2026-01-10T08:00:00.000Z", totalCost: 100 }),

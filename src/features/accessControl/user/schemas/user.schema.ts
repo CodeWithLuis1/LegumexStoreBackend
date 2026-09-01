@@ -13,14 +13,11 @@ export const userIdParamSchema = z.object({
 })
 export const updateUserSchema = createUserSchema.partial()
 
-// "search" busca por name o username -- ver user.service.ts::listUsers.
 export const userQuerySchema = paginationQuerySchema.extend({
     search: z.string().trim().optional(),
 })
 
-// Body de PATCH /:id/status -- activar/desactivar el usuario (ver el mismo campo en
-// category.schema.ts/product.schema.ts). Desactivar le corta el acceso sin borrar su cuenta;
-// activar se lo devuelve.
+
 export const updateUserStatusSchema = z.object({
     isActive: z.boolean(),
 })

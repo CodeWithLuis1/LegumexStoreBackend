@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>16/16</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>16/16</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -80,40 +80,82 @@
 <a name='L15'></a><a href='#L15'>15</a>
 <a name='L16'></a><a href='#L16'>16</a>
 <a name='L17'></a><a href='#L17'>17</a>
-<a name='L18'></a><a href='#L18'>18</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { Router } from "express"</span>
-<span class="cstat-no" title="statement not covered" >import { quoteController } from "../controllers/quote.controller"</span>
-<span class="cstat-no" title="statement not covered" >import { authenticate } from "../../../shared/middlewares/authenticate"</span>
-<span class="cstat-no" title="statement not covered" >import { authorize } from "../../../shared/middlewares/authorize"</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Router } from "express"
+import multer from "multer"
+import { quoteController } from "../controllers/quote.controller"
+import { validate } from "../../../shared/middlewares/validate"
+import { authenticate } from "../../../shared/middlewares/authenticate"
+import { authorize } from "../../../shared/middlewares/authorize"
+import { calculateQuoteSchema, sendQuotePdfEmailSchema } from "../schemas/quote.schema"
 &nbsp;
-// Router separado del quoteRouter (cliente): quoteRouter usa authenticateCustomer para TODAS
-// sus rutas (JWT tipo "customer"), y este router es para staff (JWT tipo "staff"). Mezclar los
-// dos tipos de auth en un solo router.use() no es posible -- se sigue el mismo patrón que el
-// resto del repo (un router = un tipo de autenticación), mismo motivo por el que roleRouter y
-// rolePermissionRouter son dos routers separados montados bajo el mismo prefijo en routes/index.ts.
-const adminQuoteRouter = <span class="cstat-no" title="statement not covered" >Router()</span>
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+})
 &nbsp;
-<span class="cstat-no" title="statement not covered" >adminQuoteRouter.use(authenticate)</span>
+const adminQuoteRouter = Router()
 &nbsp;
-<span class="cstat-no" title="statement not covered" >adminQuoteRouter.get("/", authorize("quotes:view"), quoteController.indexAll)</span>
+adminQuoteRouter.use(authenticate)
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default adminQuoteRouter</span>
+adminQuoteRouter.get("/", authorize("quotes:view"), quoteController.indexAll)
+&nbsp;
+adminQuoteRouter.get("/products", authorize("quotes:calculate"), quoteController.products)
+adminQuoteRouter.get("/destinations", authorize("quotes:calculate"), quoteController.destinations)
+adminQuoteRouter.post("/preview", authorize("quotes:calculate"), validate(calculateQuoteSchema), quoteController.previewForAdmin)
+adminQuoteRouter.post(
+    "/send-email",
+    authorize("quotes:calculate"),
+    upload.single("file"),
+    validate(sendQuotePdfEmailSchema),
+    quoteController.sendPdfEmail
+)
+&nbsp;
+export default adminQuoteRouter
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -121,7 +163,7 @@ const adminQuoteRouter = <span class="cstat-no" title="statement not covered" >R
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-20T16:12:20.293Z
+                at 2026-09-01T20:49:48.552Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>
