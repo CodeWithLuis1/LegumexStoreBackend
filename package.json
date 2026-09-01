@@ -1,7 +1,7 @@
 {
-  "name": "legumexonlinestoreluis",
+  "name": "legumexstore-backend",
   "version": "1.0.0",
-  "description": "Legumex online store",
+  "description": "Legumex quote API",
   "license": "ISC",
   "author": "Luis Alfredo Gonzalez @codeWithLuis",
   "main": "dist/index.js",

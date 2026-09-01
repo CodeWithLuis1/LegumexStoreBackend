@@ -25,7 +25,7 @@ server.use(i18nextMiddleware.handle(i18next))
 server.use("/api", appRouter)
 
 server.get("/", (_req, res) => {
-    res.json({ message: "Welcome to the Legumex Online Store API" })
+    res.json({ message: "Legumex Quote API" })
 })
 
 server.use(errorHandler)
