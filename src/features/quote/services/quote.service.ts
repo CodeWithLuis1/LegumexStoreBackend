@@ -64,6 +64,12 @@ interface TransportLine {
     baseCost: number
 }
 
+interface AdjustmentLine {
+    unitCost: number
+    totalUnits: number
+    lineTotal: number
+}
+
 interface QuoteCalculation {
     productVariantId: number
     destinationId: number
@@ -76,6 +82,7 @@ interface QuoteCalculation {
     intermediatePackagingCost: number
     palletMaterialCost: number
     transportCost: number
+    adjustmentCost: number
     totalCost: number
     breakdown: {
         rawMaterials: RawMaterialLine[]
@@ -83,6 +90,7 @@ interface QuoteCalculation {
         intermediatePackaging: IntermediatePackagingLine | null
         palletMaterials: PalletMaterialLine[]
         transport: TransportLine
+        adjustment: AdjustmentLine | null
         language: ContentLanguage
     }
 }
@@ -326,8 +334,16 @@ async function calculateQuote(input: CalculateQuoteInput, language: ContentLangu
         baseCost: transportCost
     }
 
+    // Ajuste manual de costo por unidad (ver Product.model.ts::additionalCostPerUnit) -- costos
+    // que todavía no están bien definidos en el catálogo. Se multiplica por totalUnits igual que
+    // materia prima/empaque; null/sin valor = sin línea, no infla el total.
+    const additionalCostPerUnit = toDecimal(variant.parentProduct?.additionalCostPerUnit ?? 0)
+    const adjustmentCost = roundMoney(additionalCostPerUnit.times(totalUnits))
+    const adjustment: AdjustmentLine | null = additionalCostPerUnit.greaterThan(0)
+        ? { unitCost: additionalCostPerUnit.toNumber(), totalUnits, lineTotal: adjustmentCost }
+        : null
 
-    const totalCost = sumMoney([rawMaterialCost, unitPackagingCost, intermediatePackagingCost, palletMaterialCost, transportCost])
+    const totalCost = sumMoney([rawMaterialCost, unitPackagingCost, intermediatePackagingCost, palletMaterialCost, transportCost, adjustmentCost])
 
     const variantLabelParts = [variant.sizePresentation?.displayLabel, variant.usedPackaging?.displayName].filter(Boolean)
 
@@ -343,6 +359,7 @@ async function calculateQuote(input: CalculateQuoteInput, language: ContentLangu
         intermediatePackagingCost,
         palletMaterialCost,
         transportCost,
+        adjustmentCost,
         totalCost,
         breakdown: {
             rawMaterials,
@@ -350,6 +367,7 @@ async function calculateQuote(input: CalculateQuoteInput, language: ContentLangu
             intermediatePackaging,
             palletMaterials,
             transport,
+            adjustment,
             language
         }
     }
@@ -484,6 +502,7 @@ async function saveQuote(customerId: number, input: CalculateQuoteInput, languag
         intermediatePackagingCost: calculation.intermediatePackagingCost,
         palletMaterialCost: calculation.palletMaterialCost,
         transportCost: calculation.transportCost,
+        adjustmentCost: calculation.adjustmentCost,
         totalCost: calculation.totalCost,
         breakdown: calculation.breakdown
     })

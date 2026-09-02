@@ -261,6 +261,54 @@ describe("quoteService.calculateQuote", () => {
         })
     })
 
+    describe("ajuste manual de costo por unidad (Product.additionalCostPerUnit, costos aún no definidos en el catálogo)", () => {
+        function stubVariantWithAdjustment(additionalCostPerUnit: number | null): void {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 20,
+                parentProduct: { isCustomizable: false, productIngredients: [], additionalCostPerUnit },
+                usedPackaging: null,
+                palletMaterials: []
+            })
+        }
+
+        it("multiplica additionalCostPerUnit por totalUnits y lo suma al total", async () => {
+            stubVariantWithAdjustment(0.3)
+
+            const result = await quoteService.calculateQuote(baseInput)
+
+            // totalUnits = 20 (1 palet * 20 unidades/palet); adjustmentCost = 0.3 * 20
+            expect(result.adjustmentCost).toBe(6)
+            expect(result.totalCost).toBe(56) // transportCost(50) + adjustmentCost(6)
+            expect(result.breakdown.adjustment).toEqual({ unitCost: 0.3, totalUnits: 20, lineTotal: 6 })
+        })
+
+        it("no agrega línea ni costo cuando additionalCostPerUnit es null (caso normal, sin ajuste)", async () => {
+            stubVariantWithAdjustment(null)
+
+            const result = await quoteService.calculateQuote(baseInput)
+
+            expect(result.adjustmentCost).toBe(0)
+            expect(result.breakdown.adjustment).toBeNull()
+            expect(result.totalCost).toBe(50) // solo transportCost
+        })
+
+        it("no revienta si el producto no trae additionalCostPerUnit en absoluto (dato viejo, antes de este campo)", async () => {
+            mockVariantFindOne.mockResolvedValue({
+                id: 10,
+                unitsPerPallet: 20,
+                parentProduct: { isCustomizable: false, productIngredients: [] },
+                usedPackaging: null,
+                palletMaterials: []
+            })
+
+            const result = await quoteService.calculateQuote(baseInput)
+
+            expect(result.adjustmentCost).toBe(0)
+            expect(result.breakdown.adjustment).toBeNull()
+        })
+    })
+
     describe("receta fija con unidad de receta distinta a la de costeo (2026-08-27, se compra por libra, se usa por gramo)", () => {
         it("convierte quantityValue de quantityUnit a costUnit con baseFactor antes de multiplicar por costPerUnit", async () => {
             mockVariantFindOne.mockResolvedValue({

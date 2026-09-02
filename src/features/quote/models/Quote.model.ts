@@ -83,6 +83,15 @@ class Quote extends Model {
     })
     declare transportCost: number
 
+    // Ver Product.model.ts::additionalCostPerUnit -- mismo patrón que intermediatePackagingCost
+    // (columna agregada después, defaultValue 0 para no romper filas viejas).
+    @Column({
+        type: DataType.DECIMAL(12, 4),
+        allowNull: false,
+        defaultValue: 0
+    })
+    declare adjustmentCost: number
+
     @Column({
         type: DataType.DECIMAL(12, 4),
         allowNull: false
